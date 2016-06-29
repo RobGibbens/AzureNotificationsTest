@@ -1,7 +1,11 @@
-﻿using Microsoft.Owin;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Owin;
 using Owin;
 
-[assembly: OwinStartupAttribute(typeof(NotificationTest.Startup))]
+[assembly: OwinStartup(typeof(NotificationTest.Startup))]
+
 namespace NotificationTest
 {
     public partial class Startup
