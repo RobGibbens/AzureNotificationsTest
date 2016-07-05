@@ -75,8 +75,9 @@ namespace PushNotifications.iOS
 			// Device tokens can change, so your app needs to reregister every time it is launched and pass the received token back to your server.
 
 			// Azure SDK uses internally something hacky (https://github.com/Azure/azure-mobile-services/blob/4c3556d3fd3c89cacf9645b936ed495ec882eb02/sdk/Managed/src/Microsoft.WindowsAzure.MobileServices.iOS/Push/ApnsRegistration.cs#L72):
-			// deviceToken.Description.Trim('<','>').Replace(" ", string.Empty).ToUpperInvariant();
-			var newDeviceToken = deviceToken.GetBase64EncodedString(NSDataBase64EncodingOptions.None);
+			//deviceToken.Description.Trim('<','>').Replace(" ", string.Empty).ToUpperInvariant();
+			//var newDeviceToken = deviceToken.GetBase64EncodedString(NSDataBase64EncodingOptions.None);
+			var newDeviceToken = deviceToken.Description.Trim('<','>').Replace(" ", string.Empty).ToUpperInvariant();
 
 			// Unregister previous device.
 			var previousDeviceToken = GetSavedDeviceToken();
@@ -110,6 +111,9 @@ namespace PushNotifications.iOS
 		{
 			// This will be called if the app is in the background/not running and if in the foreground.
 			// However, it will not display a notification visually if the app is in the foreground.
+
+			// TODO: Handle
+			// TODO: When to call the completionHandler?
 		}
 
 		/// <summary>

@@ -5,6 +5,8 @@ using System.Threading;
 using System.Text;
 using System.Diagnostics;
 using PushNotificationsClientServerShared;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 namespace PushNotificationsClient
 {
@@ -12,10 +14,9 @@ namespace PushNotificationsClient
 	{
 		public PushNotificationManager (string serverUrl = "http://192.168.178.44:8080")
 		{
-			this.serverUrl = serverUrl;
+			this.client.BaseAddress = new Uri(serverUrl);
+			this.client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 		}
-
-		string serverUrl;
 
 		readonly HttpClient client = new HttpClient();
 
@@ -23,25 +24,28 @@ namespace PushNotificationsClient
 		{
 			Debug.Assert(deviceInfo != null, "DeviceInfo required");
 
-			var content = new StringContent($"/api/?platform={deviceInfo.Platform.ToString()}&deviceToken={deviceInfo.DeviceToken}", Encoding.UTF8);
-			var response = await this.client.PostAsync(this.serverUrl, content, token).ConfigureAwait(false);
+			var json = JsonConvert.SerializeObject(deviceInfo);
+
+			var request = new HttpRequestMessage(HttpMethod.Post, "api");
+			request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+			var response = await this.client.SendAsync(request).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"Error registering device: {response.ReasonPhrase}");
 
 			return response.IsSuccessStatusCode;
 		}
 
+		/*
 		public async Task<bool> UnregisterDeviceAsync(string deviceToken, CancellationToken token = default(CancellationToken))
 		{
 			Debug.Assert(deviceToken != null, "Device token required");
 
-			var content = new StringContent($"/api/{deviceToken}", Encoding.UTF8);
-			var response = await this.client.PostAsync(this.serverUrl, content, token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"Error unregistering device: {response.ReasonPhrase}");
 
 			return response.IsSuccessStatusCode;
 		}
+		*/
 	}
 }
 
