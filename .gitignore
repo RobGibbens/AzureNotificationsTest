@@ -9,6 +9,8 @@ TestResults/
 
 # globs
 Makefile.in
+*.mdf
+*.ldf
 *.DS_Store
 *.sln.cache
 *.suo

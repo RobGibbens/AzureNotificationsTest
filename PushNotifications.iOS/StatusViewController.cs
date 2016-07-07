@@ -95,10 +95,10 @@ namespace PushNotifications.iOS
 
 			// Every device is assigned a unique installation ID by the backend.
 			// If the installation ID is null, a new installation will be created, otherwise an existing will be updated.
-			var installationId = GetSavedInstallationId();
+			var uniqueDeviceId = GetSavedInstallationId();
 			var newInstallationId = await this.pushManager.RegisterOrUpdateDeviceAsync(new DeviceInformation
 			{
-				ID = installationId,
+				Id = uniqueDeviceId,
 				DeviceToken = newDeviceToken,
 				Platform = PLATFORM.iOS
 			});

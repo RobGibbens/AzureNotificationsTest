@@ -143,6 +143,7 @@ namespace PushNotificationsServer.Controllers.API
 					return this.BadRequest("Device name is required when registering a new device.");
 				}
 
+				// Every device/installation gets a unique ID.
 				installation = new CustomDeviceInstallation();
 				installation.Id = Guid.NewGuid().ToString(); 
 			}
