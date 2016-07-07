@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Azure.NotificationHubs;
-using PushNotificationsServer.Models;
 
 namespace PushNotificationsServer.Models
 {
-    public sealed class CustomDeviceInstallation : Installation
+	/// <summary>
+	/// An "Installation" represents a registered device in Azure notificatin services.
+	/// This custom subclass stores additional data and has some helper methods.
+	/// The Installation instances and the type are never exposed to the client.
+	/// Clients only get <see cref="PushNotificationsClientServerShared.DeviceInformation"/> objects.
+	/// </summary>
+	public sealed class CustomDeviceInstallation : Installation
     {
 		public enum TEMPLATES
 		{
@@ -30,7 +35,7 @@ namespace PushNotificationsServer.Models
 			this.Templates.Add(key, new InstallationTemplate
 			{
 				Body = template,
-				Tags = new List<string> { $"template-for-{key}" }
+				Tags = new List<string> { $"template-for-{key}", $"platform-{this.Platform.ToString()}" }
 			});
 		}
 
@@ -73,5 +78,14 @@ namespace PushNotificationsServer.Models
                 base.InstallationId = value;
             }
         }
+
+		/// <summary>
+		/// Optional device name.
+		/// </summary>
+		public string DeviceName
+		{
+			get;
+			set;
+		}
     }
 }
