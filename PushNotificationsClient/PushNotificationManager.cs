@@ -16,23 +16,36 @@ namespace PushNotificationsClient
 		{
 			this.client.BaseAddress = new Uri(serverUrl);
 			this.client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+			this.client.Timeout = TimeSpan.FromSeconds(120);
 		}
 
 		readonly HttpClient client = new HttpClient();
 
-		public async Task<bool> RegisterDeviceAsync(DeviceInformation deviceInfo, CancellationToken token = default(CancellationToken))
+		public async Task<string> RegisterOrUpdateDeviceAsync(DeviceInformation deviceInfo, CancellationToken token = default(CancellationToken))
 		{
 			Debug.Assert(deviceInfo != null, "DeviceInfo required");
 
 			var json = JsonConvert.SerializeObject(deviceInfo);
 
-			var request = new HttpRequestMessage(HttpMethod.Post, "api");
+			var request = new HttpRequestMessage(HttpMethod.Post, "api/register");
 			request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-			var response = await this.client.SendAsync(request).ConfigureAwait(false);
+			var response = await this.client.SendAsync(request, token).ConfigureAwait(false);
 
-			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"Error registering device: {response.ReasonPhrase}");
+			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(RegisterOrUpdateDeviceAsync)}] Error registering device: {response.ReasonPhrase}");
 
-			return response.IsSuccessStatusCode;
+			var installationId = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+			// Json-encoded string is expected as the return value.
+			string ret = null;
+			try
+			{
+				ret = JsonConvert.DeserializeObject<string>(installationId);
+			}
+			catch(Exception ex)
+			{
+				Debug.WriteLine($"[{nameof(RegisterOrUpdateDeviceAsync)}] Failed to deserialize return value: '{installationId}'; {ex}");
+			}
+			return ret;
 		}
 
 		/*

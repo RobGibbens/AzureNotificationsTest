@@ -9,29 +9,13 @@ namespace PushNotifications.iOS
 {
 	public class AppDelegate : UIApplicationDelegate
 	{
-		#region Store Device Token
-		const string SETTING_TOKEN = "DeviceToken";
-
-		static void SaveDeviceToken(string token)
-		{
-			if(string.IsNullOrWhiteSpace(token))
-			{
-				CrossSettings.Current.Remove(SETTING_TOKEN);
-				return;
-			}
-			CrossSettings.Current.AddOrUpdateValue(SETTING_TOKEN, token);
-		}
-
-		static string GetSavedDeviceToken() => CrossSettings.Current.GetValueOrDefault<string>(SETTING_TOKEN, null);
-		#endregion
+		public static readonly NSString RegisteredForRemoteNotificationsMessage = new NSString("RegisteredForRemoteNotificationsMessage");
 
 		public override UIWindow Window
 		{
 			get;
 			set;
 		}
-
-		PushNotificationManager pushManager = new PushNotificationManager();
 
 		public override bool FinishedLaunching (UIApplication application, NSDictionary launchOptions)
 		{
@@ -64,32 +48,22 @@ namespace PushNotifications.iOS
 		/// <returns>The for remote notifications.</returns>
 		/// <param name="application">Application.</param>
 		/// <param name="deviceToken">Device token.</param>
-		public async override void RegisteredForRemoteNotifications (UIApplication application, NSData deviceToken)
+		public override void RegisteredForRemoteNotifications (UIApplication application, NSData deviceToken)
 		{
 			if(deviceToken == null)
 			{
 				// Can happen in rare conditions e.g. after restoring a device.
 				return;
 			}
+
 			// The device token is your key to sending push notifications to your app on a specific device.
 			// Device tokens can change, so your app needs to reregister every time it is launched and pass the received token back to your server.
 
-			// Azure SDK uses internally something hacky (https://github.com/Azure/azure-mobile-services/blob/4c3556d3fd3c89cacf9645b936ed495ec882eb02/sdk/Managed/src/Microsoft.WindowsAzure.MobileServices.iOS/Push/ApnsRegistration.cs#L72):
-			//deviceToken.Description.Trim('<','>').Replace(" ", string.Empty).ToUpperInvariant();
-			//var newDeviceToken = deviceToken.GetBase64EncodedString(NSDataBase64EncodingOptions.None);
-			var newDeviceToken = deviceToken.Description.Trim('<','>').Replace(" ", string.Empty).ToUpperInvariant();
-
-			// Unregister previous device.
-			var previousDeviceToken = GetSavedDeviceToken();
-			await this.pushManager.RegisterDeviceAsync(new DeviceInformation
-			{
-				DeviceToken = newDeviceToken,
-				Platform = PLATFORM.iOS
-			});
-
-			// Remember new token.
-			SaveDeviceToken(newDeviceToken);
+			// Send a notifiation. Can be picked up by view controllers.
+			NSNotificationCenter.DefaultCenter.PostNotificationName(AppDelegate.RegisteredForRemoteNotificationsMessage, deviceToken);
 		}
+
+
 
 		/// <summary>
 		/// After you call the RegisterForRemoteNotifications() method of the UIApplication object,
