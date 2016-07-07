@@ -134,6 +134,14 @@
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
     <Compile Include="Helpers\Settings.cs" />
+    <Compile Include="CustomCell.cs" />
+    <Compile Include="CustomCell.designer.cs">
+      <DependentUpon>CustomCell.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StatusViewController.cs" />
+    <Compile Include="StatusViewController.designer.cs">
+      <DependentUpon>StatusViewController.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PushNotificationsClient\PushNotificationsClient.csproj">
