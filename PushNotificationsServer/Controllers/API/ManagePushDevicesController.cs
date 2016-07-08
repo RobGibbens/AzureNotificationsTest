@@ -191,7 +191,8 @@ namespace PushNotificationsServer.Controllers.API
 		/// {
 		///		"SenderId": "6385d53f-c515-443a-8c62-898914d2bb4e",
 		///		"Message": "Test Message",
-		///		"TargetPlatforms": null
+		///		"TargetPlatforms": null,
+		///		"Template" : 0
 		/// }
 		/// </summary>
 		/// <param name="sendData">message to send</param>
@@ -215,7 +216,7 @@ namespace PushNotificationsServer.Controllers.API
 				return this.NotFound();
 			}
 
-			string tags = null;
+			string tags = string.Empty;
 			if (sendData.TargetPlatforms != null)
 			{
 				// If we have limited platforms to send to, create a tag expression.
@@ -225,6 +226,12 @@ namespace PushNotificationsServer.Controllers.API
 				tags = string.Join("||", sendData.TargetPlatforms.Select(tp => $"platform-{tp.ToString()}"));
 			}
 
+			// Use tag expressions to select the right template. This is matched against the templates in the CustomDeviceInstallation.
+			if (tags.Length > 0)
+			{
+				tags += "||";
+			}
+			tags += $"template-{sendData.Template.ToString()}";
 
 			// Special syntax when sending to a single installation ID: hub.sendNotification(n, "InstallationId:{installation-id}");
 			var result = await this.notificationHubClient.SendTemplateNotificationAsync(

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data.SqlTypes;
 using Microsoft.Azure.NotificationHubs;
 using PushNotificationsClientServerShared;
 
@@ -44,6 +45,7 @@ namespace PushNotificationsServer.Models
 		public void AddOrUpdateTemplates()
 		{
 			// About templates and template expressions: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-templates-cross-platform-push-messages/
+			string neutralTemplate = null;
 			string happyTemplate = null;
 			string unhappyTemplate = null;
 			switch (this.Platform)
@@ -51,21 +53,24 @@ namespace PushNotificationsServer.Models
 				// iOS
 				case NotificationPlatform.Apns:
 					// Possible payloads for iOS: https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html
-					happyTemplate = "{\"aps\":{\"alert\":\"{'😀 ' + $(message)}\"}}";
-					unhappyTemplate = "{\"aps\":{\"alert\":\"{'🙁 ' + $(message)}\"}}";
+					neutralTemplate = "{\"aps\":{\"alert\":\"$(message)\"}}";
+					happyTemplate = "{\"aps\":{\"alert\":\"{'\U0001F600 ' + $(message)}\"}}";
+					unhappyTemplate = "{\"aps\":{\"alert\":\"{'\U0001F61F ' + $(message)}\"}}";
 					break;
 
 				// Android
 				case NotificationPlatform.Gcm:
 					// GCM payloads: https://developers.google.com/cloud-messaging/concept-options#notifications_and_data_messages
-					happyTemplate = "{\"data\":{\"msg\":\"{'😀 ' + $(message)}\"}}";
-					unhappyTemplate = "{\"data\":{\"msg\":\"{'🙁 ' + $(message)}\"}}";
+					neutralTemplate = "{\"data\":{\"msg\":\"$(message)\"}}";
+					happyTemplate = "{\"data\":{\"msg\":\"{'\U0001F600 ' + $(message)}\"}}";
+					unhappyTemplate = "{\"data\":{\"msg\":\"{'\U0001F61F ' + $(message)}\"}}";
 					break;
 					
 				default:
 					throw new InvalidOperationException("Unsupported target platform.");
 			}
 
+			this.AddOrUpdateTemplate(NotificationTemplate.Neutral, neutralTemplate);
 			this.AddOrUpdateTemplate(NotificationTemplate.Happy, happyTemplate);
 			this.AddOrUpdateTemplate(NotificationTemplate.Unhappy, unhappyTemplate);
 		}
@@ -73,7 +78,7 @@ namespace PushNotificationsServer.Models
 		/// <summary>
 		/// Contains when this device was last updated  by the client.
 		/// </summary>
-		public DateTime LastUpdated { get; set; }
+		public DateTime LastUpdated { get; set; } = (DateTime)SqlDateTime.MinValue;
 
 		[Key]
         public string Id
