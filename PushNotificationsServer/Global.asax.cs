@@ -11,13 +11,31 @@ using PushNotificationsServer.Models;
 
 namespace PushNotificationsServer
 {
-    public class MvcApplication : System.Web.HttpApplication
+	public class CustomDbInitializer : DropCreateDatabaseAlways<PushNotificationContext>
+	{
+		protected override void Seed(PushNotificationContext context)
+		{
+			// Always initialize with a device that can be used to test sending.
+			var sendTestDevice = new CustomDeviceInstallation
+			{
+				DeviceName = "Send Test Device"	,
+				Id = "sendtest",
+				InstallationId = "sendtest"
+			};
+			context.CustomDeviceInstallations.Add(sendTestDevice);
+
+			base.Seed(context);
+		}
+	}
+
+
+	public class MvcApplication : System.Web.HttpApplication
     {
         protected void Application_Start()
         {
 #if DEBUG
 			// Always regenerate DB while in debug mode.°
-			Database.SetInitializer(new DropCreateDatabaseAlways<PushNotificationContext>());
+			Database.SetInitializer(new CustomDbInitializer());
 #endif
 
 			AreaRegistration.RegisterAllAreas();
