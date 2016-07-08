@@ -30,6 +30,10 @@ namespace PushNotifications.iOS
         [GeneratedCode ("iOS Designer", "1.0")]
         partial void OnUnregisterClicked (UIKit.UIButton sender);
 
+        [Action ("OnSendClicked:")]
+        [GeneratedCode ("iOS Designer", "1.0")]
+        partial void OnSendClicked (UIKit.UIButton sender);
+
         void ReleaseDesignerOutlets ()
         {
             if (btnRegisterDevice != null) {

@@ -17,7 +17,7 @@
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                         <subviews>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" id="11" translatesAutoresizingMaskIntoConstraints="NO">
-                                <rect key="frame" x="20" y="96" width="560" height="484"/>
+                                <rect key="frame" x="20" y="160" width="560" height="420"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="none" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" id="12" rowHeight="44" style="IBUITableViewCellStyleSubtitle" textLabel="19" detailTextLabel="20" customClass="CustomCell">
@@ -64,6 +64,15 @@
                                     <action selector="OnUnregisterClicked:" destination="5" id="32" eventType="touchUpInside"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="68" translatesAutoresizingMaskIntoConstraints="NO">
+                                <rect key="frame" x="249.5" y="96" width="101" height="30"/>
+                                <state key="normal" title="Send message">
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="OnSendClicked:" destination="5" id="77" eventType="touchUpInside"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <constraints>
                             <constraint id="23" firstItem="21" firstAttribute="centerX" secondItem="6" secondAttribute="centerX"/>
@@ -73,7 +82,9 @@
                             <constraint id="27" firstItem="6" firstAttribute="trailing" secondItem="11" secondAttribute="trailing" constant="20"/>
                             <constraint id="28" firstItem="11" firstAttribute="leading" secondItem="6" secondAttribute="leading" constant="20"/>
                             <constraint id="29" firstItem="3" firstAttribute="top" secondItem="11" secondAttribute="bottom" constant="20"/>
-                            <constraint id="30" firstItem="11" firstAttribute="top" secondItem="22" secondAttribute="bottom" constant="8"/>
+                            <constraint id="69" firstItem="68" firstAttribute="centerY" secondItem="22" secondAttribute="bottom" constant="23"/>
+                            <constraint id="70" firstItem="68" firstAttribute="centerX" secondItem="6" secondAttribute="centerX"/>
+                            <constraint id="71" firstItem="11" firstAttribute="top" secondItem="68" secondAttribute="bottom" constant="34"/>
                         </constraints>
                     </view>
                     <connections>

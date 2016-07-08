@@ -86,22 +86,6 @@ namespace PushNotificationsClient
 		}
 
 		/// <summary>
-		/// Helper to send a request. Handles cancellation.
-		/// </summary>
-		/// <returns>The request.</returns>
-		/// <param name="method">Method.</param>
-		/// <param name="url">URL.</param>
-		/// <param name="content">Content.</param>
-		/// <param name="token">Token.</param>
-		async Task<HttpResponseMessage> SendRequest(HttpMethod method, string url, HttpContent content, CancellationToken token = default(CancellationToken))
-		{
-			var request = new HttpRequestMessage(method, url);
-			request.Content = content;
-			var response = await this.client.SendAsync(request, token).ConfigureAwait(false);
-			return response;
-		}
-
-		/// <summary>
 		/// Unregisters a device.
 		/// </summary>
 		/// <returns>information about the deleted device</returns>
@@ -124,6 +108,58 @@ namespace PushNotificationsClient
 			var result = JsonConvert.DeserializeObject<DeviceInformation>(ret);
 
 			return result;
+		}
+
+		/// <summary>
+		/// Sends a notification.
+		/// </summary>
+		/// <param name="senderId">Sender ID. Required. This is the unique ID and not the device token.</param>
+		/// <param name="message">Message. If null or empty, sending will fail.</param>
+		/// <param name="token">Token.</param>
+		/// <param name="template">Template to use.</param>
+		/// <param name="targetPlatforms">Target platforms to send to. Defaults to all platforms.</param>
+		public async Task<bool> SendNotificationAsync(string senderId, string message, CancellationToken token = default(CancellationToken), NotificationTemplate template = NotificationTemplate.Neutral, params Platform[] targetPlatforms)
+		{
+			if(string.IsNullOrWhiteSpace(senderId))
+			{
+				throw new InvalidOperationException("No sender ID set.");
+			}
+
+			if(string.IsNullOrEmpty(message))
+			{
+				return false;
+			}
+
+			var sendData = new SendData
+			{
+				SenderId = senderId,
+				Message = message,
+				TargetPlatforms = targetPlatforms,
+				Template = template
+			};
+			var json = JsonConvert.SerializeObject(sendData);
+
+			var response = await this.SendRequest(HttpMethod.Post, "api/send", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
+
+			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(SendNotificationAsync)}] Error sending notification: {response.ReasonPhrase}");
+
+			return response.IsSuccessStatusCode;
+		}
+
+		/// <summary>
+		/// Helper to send a request. Handles cancellation.
+		/// </summary>
+		/// <returns>The request.</returns>
+		/// <param name="method">Method.</param>
+		/// <param name="url">URL.</param>
+		/// <param name="content">Content.</param>
+		/// <param name="token">Token.</param>
+		async Task<HttpResponseMessage> SendRequest(HttpMethod method, string url, HttpContent content, CancellationToken token = default(CancellationToken))
+		{
+			var request = new HttpRequestMessage(method, url);
+			request.Content = content;
+			var response = await this.client.SendAsync(request, token).ConfigureAwait(false);
+			return response;
 		}
 	}
 }
