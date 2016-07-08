@@ -100,7 +100,8 @@ namespace PushNotifications.iOS
 			{
 				Id = uniqueDeviceId,
 				DeviceToken = newDeviceToken,
-				Platform = PLATFORM.iOS
+				Platform = PLATFORM.iOS,
+				DeviceName = UIDevice.CurrentDevice.Name
 			});
 
 			if(newInstallationId == null)
@@ -110,15 +111,26 @@ namespace PushNotifications.iOS
 			else
 			{
 				this.LogEvent("Registration complete", $"InstalationID: {newInstallationId}");
+				// Remember new installation ID.
+				SaveInstallationId(newInstallationId);
 			}
-
-
-			// Remember new installation ID.
-			SaveInstallationId(newInstallationId);
 		}
 
-		partial void OnUnregisterClicked (UIButton sender)
+		async partial void OnUnregisterClicked (UIButton sender)
 		{
+			var installationId = GetSavedInstallationId();
+			this.LogEvent("Unregistering", $"ID: {installationId}");
+			var result = await this.pushManager.UnregisterDeviceAsync(installationId);
+
+			if(result == null)
+			{
+				this.LogEvent("Unregistering failed", $"Tried ID: {installationId}");
+			}
+			else
+			{
+				this.LogEvent("Unregistering suceeded", $"Unregistered: {result.DeviceName}");
+			}
+			SaveInstallationId(null);
 		}
 	}
 }
