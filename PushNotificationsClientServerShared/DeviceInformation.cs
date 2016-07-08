@@ -20,7 +20,7 @@ namespace PushNotificationsClientServerShared
 		/// Gets or sets the platform.
 		/// </summary>
 		[Required]
-		public PLATFORM Platform
+		public Platform Platform
 		{
 			get;
 			set;

@@ -1,6 +1,6 @@
 ﻿namespace PushNotificationsClientServerShared
 {
-	public enum PLATFORM
+	public enum Platform
 	{
 		Unknown = -1,
 		/// <summary>

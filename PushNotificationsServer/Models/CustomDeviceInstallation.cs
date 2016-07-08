@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Azure.NotificationHubs;
+using PushNotificationsClientServerShared;
 
 namespace PushNotificationsServer.Models
 {
@@ -13,12 +14,7 @@ namespace PushNotificationsServer.Models
 	/// </summary>
 	public sealed class CustomDeviceInstallation : Installation
     {
-		public enum TEMPLATES
-		{
-			Default = 0
-		}
-		
-		void AddOrUpdateTemplate(TEMPLATES templateType, string template)
+		void AddOrUpdateTemplate(NotificationTemplate templateType, string template)
 		{
 			if (this.Templates == null)
 			{
@@ -32,33 +28,46 @@ namespace PushNotificationsServer.Models
 				this.Templates.Remove(key);
 			}
 
+			// Add the template. For unknown reasons a Dictionary<string, InstallationTemplate> is used here and
+			// not a List<InstallationTemplate>. The key (string) seems to be unused when evaluating template expressions.
+			// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
 			this.Templates.Add(key, new InstallationTemplate
 			{
 				Body = template,
-				Tags = new List<string> { $"template-for-{key}", $"platform-{this.Platform.ToString()}" }
+				Tags = new List<string> { $"template-{key}" }
 			});
 		}
 
-		public void AddOrUpdateDefaultTemplate()
+		/// <summary>
+		/// Configures the templates of the installation.
+		/// </summary>
+		public void AddOrUpdateTemplates()
 		{
-			string template = null;
+			// About templates and template expressions: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-templates-cross-platform-push-messages/
+			string happyTemplate = null;
+			string unhappyTemplate = null;
 			switch (this.Platform)
 			{
 				// iOS
 				case NotificationPlatform.Apns:
-					template = "{\"aps\":{\"alert\":\"$(message)\"}}";
+					// Possible payloads for iOS: https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html
+					happyTemplate = "{\"aps\":{\"alert\":\"{'😀 ' + $(message)}\"}}";
+					unhappyTemplate = "{\"aps\":{\"alert\":\"{'🙁 ' + $(message)}\"}}";
 					break;
 
 				// Android
 				case NotificationPlatform.Gcm:
-					template = "{\"data\":{\"msg\":\"$(message)\"}}";
+					// GCM payloads: https://developers.google.com/cloud-messaging/concept-options#notifications_and_data_messages
+					happyTemplate = "{\"data\":{\"msg\":\"{'😀 ' + $(message)}\"}}";
+					unhappyTemplate = "{\"data\":{\"msg\":\"{'🙁 ' + $(message)}\"}}";
 					break;
 					
 				default:
 					throw new InvalidOperationException("Unsupported target platform.");
 			}
 
-			this.AddOrUpdateTemplate(TEMPLATES.Default, template);
+			this.AddOrUpdateTemplate(NotificationTemplate.Happy, happyTemplate);
+			this.AddOrUpdateTemplate(NotificationTemplate.Unhappy, unhappyTemplate);
 		}
 
 		/// <summary>
