@@ -48,9 +48,9 @@ namespace PushNotificationsServer.Controllers.API
 				// Cannot use this nice extension method because it cannot be turned into an expression.
 				//Platform = install.Platform.ToDeviceInfoPlatform(),
 				Platform =
-					install.Platform == NotificationPlatform.Apns ? PLATFORM.iOS :
-					install.Platform == NotificationPlatform.Gcm ? PLATFORM.Android :
-					PLATFORM.Unknown,
+					install.Platform == NotificationPlatform.Apns ? Platform.iOS :
+					install.Platform == NotificationPlatform.Gcm ? Platform.Android :
+					Platform.Unknown,
 				DeviceName = install.DeviceName
 			});
 
@@ -61,23 +61,28 @@ namespace PushNotificationsServer.Controllers.API
 		/// <summary>
 		/// Deletes the installation associated with the ID.
 		/// </summary>
-		/// <param name="id">unique ID of the device to delete</param>
+		/// <param name="installationId">unique ID of the device to delete. Note: this is NOT the device token</param>
 		/// <returns>NULL if deletion failed, otherwise the deleted device information.</returns>
-		[Route("unregister/{id}")]
+		[Route("register/{installationId}")]
 		[HttpDelete]
 		[ResponseType(typeof(DeviceInformation))]
-		public IHttpActionResult UnregisterDevice(string id)
+		public IHttpActionResult UnregisterDevice(string installationId)
 		{
-			var installation = this.db.CustomDeviceInstallations.FirstOrDefault(d => d.Id == id);
-			if (installation == null)
+			if (string.IsNullOrWhiteSpace(installationId))
 			{
-				return this.NotFound();
+				return this.BadRequest("Installation ID is required.");
 			}
 
 			// Delete from Azure.
 			// Note: the ID is the GUID the backend assigns to each device. Don't confuse with the device token.
-			this.notificationHubClient.DeleteInstallation(installation.InstallationId);
+			this.notificationHubClient.DeleteInstallation(installationId);
 
+			var installation = this.db.CustomDeviceInstallations.FirstOrDefault(d => d.Id == installationId);
+			if (installation == null)
+			{
+				return this.NotFound();
+			}
+			
 			// Delete locally.
 			this.db.CustomDeviceInstallations.Remove(installation);
 			this.db.SaveChanges();
@@ -152,8 +157,14 @@ namespace PushNotificationsServer.Controllers.API
 			installation.Platform = deviceInfo.Platform.ToNotificationPlatform();
 			// The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
 			installation.PushChannel = deviceInfo.DeviceToken;
+			installation.DeviceName = deviceInfo.DeviceName;
 			installation.LastUpdated = DateTime.UtcNow;
-			installation.AddOrUpdateDefaultTemplate();
+			// Using tags: here we add a tag to identify the platform. A tag can be anything that groups devices together.
+			//             When sending a templated notification a tag expressions can be specified. Notifications will then only
+			//             be sent to Installations with a matching tag. If multiple tags match, multiple notifications will be sent.
+			// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
+			installation.Tags = new List<string> { $"platform-{deviceInfo.Platform.ToString()}" };
+			installation.AddOrUpdateTemplates();
 
 			// Save to local DB. 
 			this.db.CustomDeviceInstallations.AddOrUpdate(installation);
@@ -167,10 +178,24 @@ namespace PushNotificationsServer.Controllers.API
 		}
 
 		/// <summary>
-		/// Sends a notification to all registered devices.
+		/// Sends a notification.
+		/// The sender ID is the unique ID of the device and must be set and valid.
+		/// The message must not be empty.
+		/// The target platforms can NULL to send to all platforms.
+		/// 
+		/// Headers:
+		/// Accept:application/json
+		/// Content-Type:application/json
+		/// 
+		/// Body:
+		/// {
+		///		"SenderId": "6385d53f-c515-443a-8c62-898914d2bb4e",
+		///		"Message": "Test Message",
+		///		"TargetPlatforms": null
+		/// }
 		/// </summary>
 		/// <param name="sendData">message to send</param>
-		/// <returns></returns>
+		/// <returns>If the sender is invalid, returns a 404.</returns>
 		[Route("send")]
 		[HttpPost]
 		public async Task<IHttpActionResult> SendNotification([FromBody] SendData sendData)
@@ -185,18 +210,29 @@ namespace PushNotificationsServer.Controllers.API
 				return this.BadRequest("Sender and message content are required.");
 			}
 
+			if (!this.db.IsDeviceRegistered(sendData.SenderId))
+			{
+				return this.NotFound();
+			}
+
 			string tags = null;
 			if (sendData.TargetPlatforms != null)
 			{
-				// If we have limited platforms to send to, create a tag expression. See: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-tags-segment-push-message/
+				// If we have limited platforms to send to, create a tag expression.
+				// Also refer to RegisterOrUpdateDevice() for more information; that's where we store the  tag.
+				// See: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-tags-segment-push-message/
+				// and: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
 				tags = string.Join("||", sendData.TargetPlatforms.Select(tp => $"platform-{tp.ToString()}"));
 			}
 
+
+			// Special syntax when sending to a single installation ID: hub.sendNotification(n, "InstallationId:{installation-id}");
 			var result = await this.notificationHubClient.SendTemplateNotificationAsync(
 				// Set placeholders of templates.
 				properties:	new Dictionary<string, string> {
 					["message"] = sendData.Message
 				},
+				// This filters for tags specified for the Installation object and not for tags specified in the Installation object's templates.
 				tagExpression: tags
 			).ConfigureAwait(false);
 
@@ -210,110 +246,26 @@ namespace PushNotificationsServer.Controllers.API
 		}
 
 		/// <summary>
-		/// Helper for find if a device/platform combination is already registered.
+		/// Returns if a device has been registered for a given ID.
 		/// </summary>
-		/// <param name="platform"></param>
-		/// <param name="deviceToken"></param>
+		/// <param name="uniqueDeviceId"></param>
 		/// <returns></returns>
-		bool IsDeviceRegistered(NotificationPlatform platform, string deviceToken) => db.CustomDeviceInstallations.Any(e => e.Platform == platform && e.PushChannel == deviceToken);
-
-		/*
-		// GET: api/ManagePushDevices/5
-		[ResponseType(typeof(CustomDeviceInstallation))]
-		public IHttpActionResult GetRegisteredDevice(string installationId)
+		[Route("register/{uniqueDeviceId}")]
+		[HttpGet]
+		[ResponseType(typeof(bool))]
+		public IHttpActionResult IsDeviceRegistered(string uniqueDeviceId)
 		{
-			var device = this.db.CustomDeviceInstallations.Find(installationId);
-			if (device == null)
+			if (string.IsNullOrWhiteSpace(uniqueDeviceId))
 			{
-				return this.NotFound();
+				return this.BadRequest("Invalid device ID.");
 			}
 
-			return this.Ok(device);
-		}
+			var exists = this.db.IsDeviceRegistered(uniqueDeviceId);
 
+			return this.Ok(exists);
+		}
 		
-		// PUT: api/ManagePushDevices/5
-		[ResponseType(typeof(void))]
-		public IHttpActionResult PutPushDeviceInstallation(string id, PushDeviceInstallation pushDeviceInstallation)
-		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
-			if (id != pushDeviceInstallation.Id)
-			{
-				return BadRequest();
-			}
-
-			db.Entry(pushDeviceInstallation).State = EntityState.Modified;
-
-			try
-			{
-				db.SaveChanges();
-			}
-			catch (DbUpdateConcurrencyException)
-			{
-				if (!PushDeviceInstallationExists(id))
-				{
-					return NotFound();
-				}
-				else
-				{
-					throw;
-				}
-			}
-
-			return StatusCode(HttpStatusCode.NoContent);
-		}
-
-		// POST: api/ManagePushDevices
-		[ResponseType(typeof(PushDeviceInstallation))]
-		public IHttpActionResult PostPushDeviceInstallation(PushDeviceInstallation pushDeviceInstallation)
-		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
-			db.PushDeviceInstallations.Add(pushDeviceInstallation);
-
-			try
-			{
-				db.SaveChanges();
-			}
-			catch (DbUpdateException)
-			{
-				if (PushDeviceInstallationExists(pushDeviceInstallation.Id))
-				{
-					return Conflict();
-				}
-				else
-				{
-					throw;
-				}
-			}
-
-			return CreatedAtRoute("DefaultApi", new { id = pushDeviceInstallation.Id }, pushDeviceInstallation);
-		}
-
-		// DELETE: api/ManagePushDevices/5
-		[ResponseType(typeof(PushDeviceInstallation))]
-		public IHttpActionResult DeletePushDeviceInstallation(string id)
-		{
-			PushDeviceInstallation pushDeviceInstallation = db.PushDeviceInstallations.Find(id);
-			if (pushDeviceInstallation == null)
-			{
-				return NotFound();
-			}
-
-			db.PushDeviceInstallations.Remove(pushDeviceInstallation);
-			db.SaveChanges();
-
-			return Ok(pushDeviceInstallation);
-		}
-		*/
-
+	
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing)
@@ -322,7 +274,5 @@ namespace PushNotificationsServer.Controllers.API
 			}
 			base.Dispose(disposing);
 		}
-
-		
 	}
 }

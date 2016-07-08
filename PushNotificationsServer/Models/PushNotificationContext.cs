@@ -1,4 +1,5 @@
 ﻿using System.Data.Entity;
+using System.Linq;
 
 namespace PushNotificationsServer.Models
 {
@@ -16,5 +17,12 @@ namespace PushNotificationsServer.Models
         }
 
         public DbSet<CustomDeviceInstallation> CustomDeviceInstallations { get; set; }
-    }
+
+		/// <summary>
+		/// Helper for find if a device/platform combination is already registered.
+		/// </summary>
+		/// <param name="uniqueDeviceId"></param>
+		/// <returns></returns>
+		public bool IsDeviceRegistered(string uniqueDeviceId) => this.CustomDeviceInstallations.Any(e => e.Id == uniqueDeviceId);
+	}
 }
