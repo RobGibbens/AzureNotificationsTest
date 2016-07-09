@@ -41,7 +41,7 @@ namespace PushNotificationsClient
 
 			var json = JsonConvert.SerializeObject(deviceInfo);
 
-			var response = await this.SendRequest(HttpMethod.Post, "api/register", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
+			var response = await this.SendHttpRequest(HttpMethod.Post, "api/register", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(RegisterOrUpdateDeviceAsync)}] Error registering device: {response.ReasonPhrase}");
 
@@ -70,7 +70,7 @@ namespace PushNotificationsClient
 		{
 			Debug.Assert(!string.IsNullOrWhiteSpace(uniqueDeviceId), "Device ID is required!");
 
-			var response = await this.SendRequest(HttpMethod.Get, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
+			var response = await this.SendHttpRequest(HttpMethod.Get, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(IsDeviceRegisteredAsync)}] Error checking if device is registered: {response.ReasonPhrase}");
 
@@ -95,7 +95,7 @@ namespace PushNotificationsClient
 		{
 			Debug.Assert(uniqueDeviceId != null, "Device ID required");
 
-			var response = await this.SendRequest(HttpMethod.Delete, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
+			var response = await this.SendHttpRequest(HttpMethod.Delete, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(UnregisterDeviceAsync)}] Error unregisterings device: {response.ReasonPhrase}");
 
@@ -117,8 +117,8 @@ namespace PushNotificationsClient
 		/// <param name="message">Message. If null or empty, sending will fail.</param>
 		/// <param name="token">Token.</param>
 		/// <param name="template">Template to use.</param>
-		/// <param name="targetPlatforms">Target platforms to send to. Defaults to all platforms.</param>
-		public async Task<bool> SendNotificationAsync(string senderId, string message, CancellationToken token = default(CancellationToken), NotificationTemplate template = NotificationTemplate.Neutral, params Platform[] targetPlatforms)
+		/// <param name="recipientId">Individual recipient. Use the device's unique ID. Using NULL will send to all.</param>
+		public async Task<bool> SendNotificationAsync(string senderId, string message, CancellationToken token = default(CancellationToken), NotificationTemplate template = NotificationTemplate.Neutral, string recipientId = null)
 		{
 			if(string.IsNullOrWhiteSpace(senderId))
 			{
@@ -134,12 +134,12 @@ namespace PushNotificationsClient
 			{
 				SenderId = senderId,
 				Message = message,
-				TargetPlatforms = targetPlatforms,
+				RecipientId = recipientId,
 				Template = template
 			};
 			var json = JsonConvert.SerializeObject(sendData);
 
-			var response = await this.SendRequest(HttpMethod.Post, "api/send", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
+			var response = await this.SendHttpRequest(HttpMethod.Post, "api/send", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(SendNotificationAsync)}] Error sending notification: {response.ReasonPhrase}");
 
@@ -147,14 +147,14 @@ namespace PushNotificationsClient
 		}
 
 		/// <summary>
-		/// Helper to send a request. Handles cancellation.
+		/// Helper to send a request.
 		/// </summary>
 		/// <returns>The request.</returns>
 		/// <param name="method">Method.</param>
 		/// <param name="url">URL.</param>
 		/// <param name="content">Content.</param>
 		/// <param name="token">Token.</param>
-		async Task<HttpResponseMessage> SendRequest(HttpMethod method, string url, HttpContent content, CancellationToken token = default(CancellationToken))
+		async Task<HttpResponseMessage> SendHttpRequest(HttpMethod method, string url, HttpContent content, CancellationToken token = default(CancellationToken))
 		{
 			var request = new HttpRequestMessage(method, url);
 			request.Content = content;
