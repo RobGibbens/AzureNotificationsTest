@@ -53,17 +53,17 @@ namespace PushNotificationsServer.Models
 				// iOS
 				case NotificationPlatform.Apns:
 					// Possible payloads for iOS: https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/TheNotificationPayload.html
-					neutralTemplate = "{\"aps\":{\"alert\":\"$(message)\"}}";
-					happyTemplate = "{\"aps\":{\"alert\":\"{'\U0001F600 ' + $(message)}\"}}";
-					unhappyTemplate = "{\"aps\":{\"alert\":\"{'\U0001F61F ' + $(message)}\"}}";
+					neutralTemplate = "{\"aps\":{\"alert\":\"{ $(sender) + ': ' + $(message) }\" } }";
+					happyTemplate = "{\"aps\":{\"alert\":\"{ $(sender) + ': \U0001F600 ' + $(message)}\" } }";
+					unhappyTemplate = "{\"aps\":{\"alert\":\"{$(sender) + ': \U0001F61F ' + $(message)}\" } }";
 					break;
 
 				// Android
 				case NotificationPlatform.Gcm:
 					// GCM payloads: https://developers.google.com/cloud-messaging/concept-options#notifications_and_data_messages
-					neutralTemplate = "{\"data\":{\"msg\":\"$(message)\"}}";
-					happyTemplate = "{\"data\":{\"msg\":\"{'\U0001F600 ' + $(message)}\"}}";
-					unhappyTemplate = "{\"data\":{\"msg\":\"{'\U0001F61F ' + $(message)}\"}}";
+					neutralTemplate = "{\"data\":{\"msg\":\"{ $(sender) + ': ' + $(message) }\" } }";
+					happyTemplate = "{\"data\":{\"msg\":\"{ $(sender) + ': \U0001F600 ' + $(message)}\" } }";
+					unhappyTemplate = "{\"data\":{\"msg\":\"{ $(sender) + ': \U0001F61F ' + $(message)}\" } }";
 					break;
 					
 				default:

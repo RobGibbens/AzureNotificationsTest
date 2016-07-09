@@ -20,19 +20,18 @@ namespace PushNotificationsClientServerShared
 		public string Message { get; set; }
 
 		/// <summary>
-		/// Platforms to send to. This allows demonstrating tag expressions.
-		/// NULL will send to all platforms.
+		/// Sets the message template that will be used. If not set, a random template will be used.
 		/// </summary>
-		public Platform[] TargetPlatforms
+		public NotificationTemplate Template
 		{
 			get;
 			set;
 		}
 
 		/// <summary>
-		/// Sets the message template that will be used. If not set, a random template will be used.
+		/// The recipient of the notification. Matched against the device IDs. If NULL, the notification is sent to everybody.
 		/// </summary>
-		public NotificationTemplate Template
+		public string RecipientId
 		{
 			get;
 			set;

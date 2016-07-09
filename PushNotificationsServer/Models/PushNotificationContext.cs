@@ -24,5 +24,13 @@ namespace PushNotificationsServer.Models
 		/// <param name="uniqueDeviceId"></param>
 		/// <returns></returns>
 		public bool IsDeviceRegistered(string uniqueDeviceId) => this.CustomDeviceInstallations.Any(e => e.Id == uniqueDeviceId);
+
+		/// <summary>
+		/// Gets an installation by its unique device ID.
+		/// </summary>
+		/// <param name="installationId"></param>
+		/// <returns></returns>
+		public CustomDeviceInstallation GetInstallation(string installationId) => this.CustomDeviceInstallations.FirstOrDefault(d => d.Id == installationId);
+
 	}
 }

@@ -100,7 +100,7 @@ namespace PushNotifications.iOS
 			{
 				Id = uniqueDeviceId,
 				DeviceToken = newDeviceToken,
-				Platform = PLATFORM.iOS,
+				Platform = Platform.iOS,
 				DeviceName = UIDevice.CurrentDevice.Name
 			});
 
