@@ -5,6 +5,7 @@ using Plugin.Settings;
 using PushNotificationsClient;
 using PushNotificationsClientServerShared;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace PushNotifications.iOS
 {
@@ -131,6 +132,13 @@ namespace PushNotifications.iOS
 				this.LogEvent("Unregistering suceeded", $"Unregistered: {result.DeviceName}");
 			}
 			SaveInstallationId(null);
+		}
+
+		async partial void OnSendClicked (UIButton sender)
+		{
+			var installationId = GetSavedInstallationId();
+			this.LogEvent("Sending", $"Sender ID: {installationId}");
+			await this.pushManager.SendNotificationAsync(installationId, "Hello world!", default(CancellationToken), NotificationTemplate.Neutral);
 		}
 	}
 }
