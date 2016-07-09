@@ -77,7 +77,7 @@ namespace PushNotificationsServer.Controllers.API
 			// Note: the ID is the GUID the backend assigns to each device. Don't confuse with the device token.
 			this.notificationHubClient.DeleteInstallation(installationId);
 
-			var installation = this.db.CustomDeviceInstallations.FirstOrDefault(d => d.Id == installationId);
+			var installation = this.db.GetInstallation(installationId);
 			if (installation == null)
 			{
 				return this.NotFound();
@@ -163,7 +163,12 @@ namespace PushNotificationsServer.Controllers.API
 			//             When sending a templated notification a tag expressions can be specified. Notifications will then only
 			//             be sent to Installations with a matching tag. If multiple tags match, multiple notifications will be sent.
 			// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
-			installation.Tags = new List<string> { $"platform-{deviceInfo.Platform.ToString()}" };
+			installation.Tags = new List<string> {
+				// Tags only allow certain characters: A tag can be any string, up to 120 characters, containing alphanumeric and the following non-alphanumeric characters: ‘_’, ‘@’, ‘#’, ‘.’, ‘:’, ‘-’. 
+				// Remember the platform as a tag.
+				$"platform-{deviceInfo.Platform.ToString()}",
+				// Remember the device ID as tag. This allows sending to specific devices easily.
+			};
 			installation.AddOrUpdateTemplates();
 
 			// Save to local DB. 
@@ -191,8 +196,8 @@ namespace PushNotificationsServer.Controllers.API
 		/// {
 		///		"SenderId": "6385d53f-c515-443a-8c62-898914d2bb4e",
 		///		"Message": "Test Message",
-		///		"TargetPlatforms": null,
-		///		"Template" : 0
+		///		"Template" : 0,
+		///		"RecipientId" : null
 		/// }
 		/// </summary>
 		/// <param name="sendData">message to send</param>
@@ -213,30 +218,36 @@ namespace PushNotificationsServer.Controllers.API
 
 			if (!this.db.IsDeviceRegistered(sendData.SenderId))
 			{
+				return this.BadRequest($"Cannot find a registered device for ID '{sendData.SenderId}'");
+			}
+
+			if (sendData.RecipientId != null && !this.db.IsDeviceRegistered(sendData.RecipientId))
+			{
 				return this.NotFound();
 			}
 
+			var senderInstallation = this.db.GetInstallation(sendData.SenderId);
+			Debug.Assert(senderInstallation != null, "Should never be NULL if we get here because IsDeviceRegistered() returned TRUE.");
+
 			string tags = string.Empty;
-			if (sendData.TargetPlatforms != null)
+
+			// Pick an individual recipient. Notification hub supports a special syntax to select an installation ID.
+			if (sendData.RecipientId != null)
 			{
-				// If we have limited platforms to send to, create a tag expression.
-				// Also refer to RegisterOrUpdateDevice() for more information; that's where we store the  tag.
-				// See: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-tags-segment-push-message/
-				// and: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
-				tags = string.Join("||", sendData.TargetPlatforms.Select(tp => $"platform-{tp.ToString()}"));
+				tags = "$InstallationId:{" + sendData.RecipientId + "}";
 			}
 
 			// Use tag expressions to select the right template. This is matched against the templates in the CustomDeviceInstallation.
 			if (tags.Length > 0)
 			{
-				tags += "||";
+				tags += "&&";
 			}
 			tags += $"template-{sendData.Template.ToString()}";
 
-			// Special syntax when sending to a single installation ID: hub.sendNotification(n, "InstallationId:{installation-id}");
 			var result = await this.notificationHubClient.SendTemplateNotificationAsync(
 				// Set placeholders of templates.
 				properties:	new Dictionary<string, string> {
+					["sender"] = senderInstallation.DeviceName,
 					["message"] = sendData.Message
 				},
 				// This filters for tags specified for the Installation object and not for tags specified in the Installation object's templates.

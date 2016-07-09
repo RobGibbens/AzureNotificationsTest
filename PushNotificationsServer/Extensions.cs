@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using Microsoft.Azure.NotificationHubs;
 using PushNotificationsClientServerShared;
 
@@ -31,5 +32,7 @@ namespace PushNotificationsServer
 					throw new InvalidOperationException($"Platform not supported: {devicePlatform.ToString()}");
 			}
 		}
+
+		public static string ToBase64String(this string s) => Convert.ToBase64String(Encoding.UTF8.GetBytes(s));
 	}
 }
