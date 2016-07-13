@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage
+		xmlns="http://xamarin.com/schemas/2014/forms"
+		xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+		x:Class="PushNotificationApp.StatusPage"
+		Title="Status">
+	<StackLayout>
+		<Entry x:Name="txtDeviceName" Placeholder="Enter your device's name"/>
+		<Button x:Name="btnRegisterDevice" Text="Register device" Clicked="HandleRegisterDeviceClicked"/>
+		<Button x:Name="btnUnregisterDevice" Text="Unregister device" Clicked="HandleUnregisterDeviceClicked"/>
+		<ListView
+			x:Name="lstStatus"
+			ItemsSource="{Binding StatusUpdates}">
+			<ListView.ItemTemplate>
+				<DataTemplate>
+					<TextCell Text="{Binding Title}" Detail="{Binding Message}"/>
+				</DataTemplate>
+			</ListView.ItemTemplate>
+		</ListView>
+	</StackLayout>
+</ContentPage>

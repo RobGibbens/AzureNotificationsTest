@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage
+		xmlns="http://xamarin.com/schemas/2014/forms"
+		xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+		x:Class="PushNotificationApp.ChatPage"
+		Title="Chat">
+	<StackLayout>
+		<StackLayout Orientation="Horizontal" HorizontalOptions="FillAndExpand">
+			<Entry x:Name="txtMessage" Placeholder="say something" HorizontalOptions="FillAndExpand" Keyboard="Text"/>
+			<Button x:Name="btnSend" Text="Send" BackgroundColor="Blue" TextColor="Yellow" Clicked="HandleSendClicked" WidthRequest="80"/>
+		</StackLayout>
+
+		<ListView
+			x:Name="lstMessages"
+			ItemsSource="{Binding Messages}"
+			SeparatorVisibility="Default">
+			<ListView.ItemTemplate>
+				<DataTemplate>
+					<ViewCell>
+						<StackLayout Orientation="Horizontal" BackgroundColor="Silver" Padding="20, 0, 20, 0">
+							<StackLayout.Triggers>
+								<DataTrigger TargetType="StackLayout" Binding="{Binding IsReceived}" Value="true">
+									<Setter Property="BackgroundColor" Value="Green"/>
+								</DataTrigger>
+							</StackLayout.Triggers>
+
+							<Label Text="{Binding Text}" HorizontalOptions="FillAndExpand" HorizontalTextAlignment="End" VerticalTextAlignment="Center">
+								<Label.Triggers>
+									<DataTrigger TargetType="Label" Binding="{Binding IsReceived}" Value="true">
+										<Setter Property="HorizontalTextAlignment" Value="Start"/>
+									</DataTrigger>
+								</Label.Triggers>
+							</Label>
+						</StackLayout>
+					</ViewCell>
+				</DataTemplate>
+			</ListView.ItemTemplate>
+		</ListView>
+		
+	</StackLayout>
+</ContentPage>
