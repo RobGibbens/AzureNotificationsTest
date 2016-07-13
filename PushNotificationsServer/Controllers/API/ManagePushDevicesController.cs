@@ -28,8 +28,8 @@ namespace PushNotificationsServer.Controllers.API
 
 		readonly PushNotificationContext db = new PushNotificationContext();
 		readonly NotificationHubClient notificationHubClient = NotificationHubClient.CreateClientFromConnectionString(
-			connectionString: "Endpoint=sb://renepushnotificationnamespace.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=sO84pxrkbJnP0cwR9l6JCCW4mu064eCAwR/v44N6ZT4=",
-			notificationHubPath: "RenePushNotificationHub",
+			connectionString: "Endpoint=sb://xamupushnotificationshub.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=ABj04HkW6HFxkV00HXYdEuiArKuE9hllWltmKFBJrAA=",
+			notificationHubPath: "XamUPushNotificationsHub",
 			enableTestSend: USE_TEST_SENDING);
 
 		/// <summary>
