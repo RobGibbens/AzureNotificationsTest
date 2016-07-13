@@ -1,39 +1,36 @@
 ﻿using System;
+
 using Foundation;
-using Plugin.Settings;
 using UIKit;
-using PushNotificationsClient;
-using PushNotificationsClientServerShared;
 
-namespace PushNotifications.iOS
+namespace PushNotificationApp.iOS
 {
-	public class AppDelegate : UIApplicationDelegate
+	public partial class AppDelegate : global::Xamarin.Forms.Platform.iOS.FormsApplicationDelegate
 	{
-		public static readonly NSString RegisteredForRemoteNotificationsMessage = new NSString("RegisteredForRemoteNotificationsMessage");
+		App formsApp;
 
-		public override UIWindow Window
+		public override bool FinishedLaunching (UIApplication nativeApp, NSDictionary options)
 		{
-			get;
-			set;
-		}
+			Xamarin.Forms.Forms.Init ();
 
-		public override bool FinishedLaunching (UIApplication application, NSDictionary launchOptions)
-		{
+			this.formsApp = new App();
+			LoadApplication (this.formsApp);
+
 			// Guidelines for notifications: https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/Introduction.html#//apple_ref/doc/uid/TP40008194
 
 			// App must ask the user for permission, no matter if we're using local or remote notifications.
 			// There is also RegisterForRemoteNotificationTypes() but it is deprecated in iOS8.
-			application.RegisterUserNotificationSettings(UIUserNotificationSettings.GetSettingsForTypes(
+			nativeApp.RegisterUserNotificationSettings(UIUserNotificationSettings.GetSettingsForTypes(
 				UIUserNotificationType.Alert
 				| UIUserNotificationType.Badge
 				| UIUserNotificationType.Sound,
 				null));
 
 			// Request registration for remote notifications. This will talk to Apple's push server and the app will receive a token
-			// when RegisteredForRemoteNotifications() gets called.
-			application.RegisterForRemoteNotifications();
+			// when RegisteredForRemoteNotifications() gets called. This call is non-blocking.
+			nativeApp.RegisterForRemoteNotifications();
 
-			return true;
+			return base.FinishedLaunching (nativeApp, options);
 		}
 
 		/// <summary>
@@ -59,8 +56,11 @@ namespace PushNotifications.iOS
 			// The device token is your key to sending push notifications to your app on a specific device.
 			// Device tokens can change, so your app needs to reregister every time it is launched and pass the received token back to your server.
 
-			// Send a notifiation. Can be picked up by view controllers.
-			NSNotificationCenter.DefaultCenter.PostNotificationName(AppDelegate.RegisteredForRemoteNotificationsMessage, deviceToken);
+			// Azure SDK uses internally something hacky (https://github.com/Azure/azure-mobile-services/blob/4c3556d3fd3c89cacf9645b936ed495ec882eb02/sdk/Managed/src/Microsoft.WindowsAzure.MobileServices.iOS/Push/ApnsRegistration.cs#L72):
+			// Surprisingly, this seems to work. The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
+			var parsedDeviceToken = deviceToken.Description.Trim('<','>').Replace(" ", string.Empty).ToUpperInvariant();
+			// Let out Forms app know that we have a token.
+			this.formsApp.OnRegisteredForRemoteNotifications(parsedDeviceToken);
 		}
 
 
@@ -74,20 +74,30 @@ namespace PushNotifications.iOS
 		public override void FailedToRegisterForRemoteNotifications (UIApplication application, NSError error)
 		{
 			Console.WriteLine($"Failed to register for remote notifications: {error.Description}");
+			this.formsApp.OnFailedToRegisterForRemoteNotifications(error.Description);
 		}
 
 		/// <summary>
 		/// Will be called if app received a remote notification.
 		/// According to Apple's docs this is the preferred method to use instead of ReceivedRemoteNotification().
 		/// See: https://developer.apple.com/library/ios/documentation/UIKit/Reference/UIApplicationDelegate_Protocol/#//apple_ref/occ/intfm/UIApplicationDelegate/application:didReceiveRemoteNotification:fetchCompletionHandler:
+		/// Use this method to process incoming remote notifications for your app.
+		/// Unlike the application:didReceiveRemoteNotification: method, which is called only when your app is running in the foreground,
+		/// the system calls this method when your app is running in the foreground or background. In addition,
+		/// if you enabled the remote notifications background mode, the system launches your app (or wakes it from the suspended state)
+		/// and puts it in the background state when a remote notification arrives. However, the system does not automatically launch your app if the user has force-quit it.
+		/// In that situation, the user must relaunch your app or restart the device before the system attempts to launch your app automatically again.
 		/// </summary>
 		public override void DidReceiveRemoteNotification (UIApplication application, NSDictionary userInfo, Action<UIBackgroundFetchResult> completionHandler)
 		{
 			// This will be called if the app is in the background/not running and if in the foreground.
 			// However, it will not display a notification visually if the app is in the foreground.
 
-			// TODO: Handle
-			// TODO: When to call the completionHandler?
+			this.formsApp.OnReceivedRemoteNotification();
+
+			// We must call the completion handler as soon as possible, max. after 30 seconds, otherwise the app gets terminated.
+			// If we use notifications to download something, we would return "UIBackgroundFetchResult.NewData".
+			completionHandler(UIBackgroundFetchResult.NoData);
 		}
 
 		/// <summary>
@@ -105,5 +115,4 @@ namespace PushNotifications.iOS
 		}
 	}
 }
-
 

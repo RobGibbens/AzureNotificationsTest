@@ -19,7 +19,7 @@ namespace PushNotificationsClient
 		/// Initializes a new instance.
 		/// </summary>
 		/// <param name="serverUrl">The base URL of the backend (e.g. http://192.168.178.44:8080)</param>
-		public PushNotificationManager (string serverUrl = "http://192.168.178.44:8080")
+		public PushNotificationManager (string serverUrl)
 		{
 			this.client.BaseAddress = new Uri(serverUrl);
 			this.client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -41,7 +41,7 @@ namespace PushNotificationsClient
 
 			var json = JsonConvert.SerializeObject(deviceInfo);
 
-			var response = await this.SendHttpRequest(HttpMethod.Post, "api/register", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
+			var response = await this.SendHttpRequestAsync(HttpMethod.Post, "api/register", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(RegisterOrUpdateDeviceAsync)}] Error registering device: {response.ReasonPhrase}");
 
@@ -70,7 +70,7 @@ namespace PushNotificationsClient
 		{
 			Debug.Assert(!string.IsNullOrWhiteSpace(uniqueDeviceId), "Device ID is required!");
 
-			var response = await this.SendHttpRequest(HttpMethod.Get, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
+			var response = await this.SendHttpRequestAsync(HttpMethod.Get, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(IsDeviceRegisteredAsync)}] Error checking if device is registered: {response.ReasonPhrase}");
 
@@ -95,7 +95,7 @@ namespace PushNotificationsClient
 		{
 			Debug.Assert(uniqueDeviceId != null, "Device ID required");
 
-			var response = await this.SendHttpRequest(HttpMethod.Delete, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
+			var response = await this.SendHttpRequestAsync(HttpMethod.Delete, $"api/register/{uniqueDeviceId}", null, token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(UnregisterDeviceAsync)}] Error unregisterings device: {response.ReasonPhrase}");
 
@@ -139,7 +139,7 @@ namespace PushNotificationsClient
 			};
 			var json = JsonConvert.SerializeObject(sendData);
 
-			var response = await this.SendHttpRequest(HttpMethod.Post, "api/send", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
+			var response = await this.SendHttpRequestAsync(HttpMethod.Post, "api/send", new StringContent(json, Encoding.UTF8, "application/json"), token).ConfigureAwait(false);
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(SendNotificationAsync)}] Error sending notification: {response.ReasonPhrase}");
 
@@ -154,7 +154,7 @@ namespace PushNotificationsClient
 		/// <param name="url">URL.</param>
 		/// <param name="content">Content.</param>
 		/// <param name="token">Token.</param>
-		async Task<HttpResponseMessage> SendHttpRequest(HttpMethod method, string url, HttpContent content, CancellationToken token = default(CancellationToken))
+		async Task<HttpResponseMessage> SendHttpRequestAsync(HttpMethod method, string url, HttpContent content, CancellationToken token = default(CancellationToken))
 		{
 			var request = new HttpRequestMessage(method, url);
 			request.Content = content;
