@@ -32,6 +32,18 @@ namespace PushNotificationApp
 				Text = "All good!",
 				IsReceived = true,
 			});
+
+			MessagingCenter.Subscribe<App, string> (this, App.ReceivedRemoteNotificationMessage, this.OnReceivedRemoteMessage);
+		}
+
+		void OnReceivedRemoteMessage (object sender, string message)
+		{
+			this.Messages.Add(new Message
+			{
+				Text = message,
+				IsReceived = true
+			});
+			this.lstMessages.ScrollTo(this.Messages.Last(), ScrollToPosition.Start, true);
 		}
 
 		public ObservableCollection<Message> Messages { get; } = new ObservableCollection<Message> ();
@@ -40,7 +52,7 @@ namespace PushNotificationApp
 		{
 			if(string.IsNullOrWhiteSpace(App.PushDeviceId) || string.IsNullOrWhiteSpace(App.DeviceToken))
 			{
-				this.DisplayAlert("Cannot send", "Your device seems to to be unregistered.", "OK");
+				this.DisplayAlert("Cannot send", "Your device seems to be unregistered.", "OK");
 				return;
 			}
 
