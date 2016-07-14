@@ -1,11 +1,13 @@
 ﻿using PushNotificationsClient;
 using Xamarin.Forms;
+using PushNotificationsClientServerShared;
 
 namespace PushNotificationApp
 {
 	public partial class App : Application
 	{
-		public const string RegisteredForRemoteNotificationsMessage = "RegisteredForRemoteNotificationsMessage";
+		public const string RegisteredForRemoteNotificationsMessage = "RegisteredForRemoteNotifications";
+		public const string ReceivedRemoteNotificationMessage = "ReceivedRemoteNotification";
 
 		public App ()
 		{
@@ -100,9 +102,9 @@ namespace PushNotificationApp
 		/// Gets called by the native platforms if a remote notification was received.
 		/// </summary>
 		/// <returns>The received remote notification.</returns>
-		public void OnReceivedRemoteNotification()
+		public void OnReceivedRemoteNotification(string message)
 		{
-			
+			MessagingCenter.Send(this, ReceivedRemoteNotificationMessage, message);	
 		}
 
 		protected override void OnStart ()
