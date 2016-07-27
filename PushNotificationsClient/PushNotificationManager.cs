@@ -31,11 +31,11 @@ namespace PushNotificationsClient
 		/// <summary>
 		/// Registers or updates a device.
 		/// </summary>
-		/// <returns>Unique ID of the registered device. NULL if registration fails.</returns>
+		/// <returns>Deice information. NULL if registration fails.</returns>
 		/// <param name="deviceInfo">Device info. For new registrations the DeviceInformation.Id property must be NULL.</param>
 		/// <param name="token">Token.</param>
 		/// <exception cref="System.OperationCanceledException">if cancellation was requested</exception>
-		public async Task<string> RegisterOrUpdateDeviceAsync(DeviceInformation deviceInfo, CancellationToken token = default(CancellationToken))
+		public async Task<DeviceInformation> RegisterOrUpdateDeviceAsync(DeviceInformation deviceInfo, CancellationToken token = default(CancellationToken))
 		{
 			Debug.Assert(deviceInfo != null, "DeviceInfo required");
 
@@ -45,19 +45,19 @@ namespace PushNotificationsClient
 
 			Debug.WriteLineIf(!response.IsSuccessStatusCode, $"[{nameof(RegisterOrUpdateDeviceAsync)}] Error registering device: {response.ReasonPhrase}");
 
-			var installationId = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+			var ret = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
 			// Json-encoded string is expected as the return value.
-			string ret = null;
+			DeviceInformation updatedDeviceInfo = null;
 			try
 			{
-				ret = JsonConvert.DeserializeObject<string>(installationId);
+				updatedDeviceInfo = JsonConvert.DeserializeObject<DeviceInformation>(ret);
 			}
 			catch(Exception ex)
 			{
-				Debug.WriteLine($"[{nameof(RegisterOrUpdateDeviceAsync)}] Failed to deserialize return value: '{installationId}'; {ex}");
+				Debug.WriteLine($"[{nameof(RegisterOrUpdateDeviceAsync)}] Failed to deserialize return value: '{ret}'; {ex}");
 			}
-			return ret;
+			return updatedDeviceInfo;
 		}
 
 		/// <summary>
