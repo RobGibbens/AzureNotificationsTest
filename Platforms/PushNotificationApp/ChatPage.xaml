@@ -9,7 +9,6 @@
 			<Entry x:Name="txtMessage" Placeholder="say something" HorizontalOptions="FillAndExpand" Keyboard="Text"/>
 			<Button x:Name="btnSend" Text="Send" BackgroundColor="Blue" TextColor="Yellow" Clicked="HandleSendClicked" WidthRequest="80"/>
 		</StackLayout>
-
 		<ListView
 			x:Name="lstMessages"
 			ItemsSource="{Binding Messages}"
