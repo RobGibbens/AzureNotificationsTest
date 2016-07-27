@@ -3,6 +3,7 @@ using Xamarin.Forms;
 using PushNotificationsClientServerShared;
 using System;
 using Plugin.DeviceInfo;
+using System.Threading.Tasks;
 
 namespace PushNotificationApp
 {
@@ -17,6 +18,7 @@ namespace PushNotificationApp
 
 			var tabs = new TabbedPage ();
 			tabs.Children.Add (new ChatPage ());
+			tabs.Children.Add (new StatusPage ());
 			MainPage = tabs;
 		}
 
@@ -83,7 +85,7 @@ namespace PushNotificationApp
 		/// for remote notifications.
 		/// </summary>
 		/// <param name="deviceToken">Device token.</param>
-		public async void OnRegisteredForRemoteNotifications (string deviceToken)
+		public async void OnNativeRegisteredForRemoteNotifications (string deviceToken)
 		{
 			if (string.IsNullOrWhiteSpace (deviceToken))
 			{
@@ -96,12 +98,19 @@ namespace PushNotificationApp
 				App.DeviceName = $"Unknown device {Guid.NewGuid ().ToString ()}";
 			}
 
+			App.DeviceToken = deviceToken;
+
+			await this.RegisterDeviceAsync().ConfigureAwait(false);
+		}
+
+		public async Task RegisterDeviceAsync()
+		{
 			// Every device is assigned a unique installation ID by the backend.
 			// If the current device ID is null, a new installation will be created, otherwise an existing will be updated.
 			var deviceInfo = new DeviceInformation {
 				UniqueId = App.UniqueDeviceId,
 				// The native token is needed by Azure to send a notification to the device.
-				DeviceToken = deviceToken,
+				DeviceToken = App.DeviceToken,
 				DeviceName = App.DeviceName
 			};
 
@@ -109,13 +118,13 @@ namespace PushNotificationApp
 			// when sending push notifications.
 			switch (CrossDeviceInfo.Current.Platform)
 			{
-			case Plugin.DeviceInfo.Abstractions.Platform.iOS:
+				case Plugin.DeviceInfo.Abstractions.Platform.iOS:
 				deviceInfo.Platform = Platform.iOS;
 				break;
-			case Plugin.DeviceInfo.Abstractions.Platform.Android:
+				case Plugin.DeviceInfo.Abstractions.Platform.Android:
 				deviceInfo.Platform = Platform.Android;
 				break;
-			default:
+				default:
 				throw new InvalidOperationException ("Unsupported platform!");
 			}
 
@@ -130,12 +139,12 @@ namespace PushNotificationApp
 				}
 				else
 				{
-					App.Current.MainPage.DisplayAlert ("Registration complete", $"Unique device ID: {registeredDeviceInfo.UniqueId} for token {deviceToken}", "OK");
+					App.Current.MainPage.DisplayAlert ("Registration complete", $"Unique device ID: {registeredDeviceInfo.UniqueId} for token {App.DeviceToken}", "OK");
 					// Remember new installation ID.
 					App.UniqueDeviceId = registeredDeviceInfo.UniqueId;
 				}
 
-				MessagingCenter.Send (this, RegisteredForRemoteNotificationsMessage, deviceToken);
+				MessagingCenter.Send (this, RegisteredForRemoteNotificationsMessage, App.DeviceToken);
 			}
 			catch (Exception ex)
 			{
@@ -149,7 +158,7 @@ namespace PushNotificationApp
 		/// </summary>
 		/// <returns>The failed to register for remote notifications.</returns>
 		/// <param name="">.</param>
-		public void OnFailedToRegisterForRemoteNotifications (string error)
+		public void OnNativeFailedToRegisterForRemoteNotifications (string error)
 		{
 			App.Current.MainPage.DisplayAlert ("Registration failed", error, "OK");
 		}
@@ -158,7 +167,7 @@ namespace PushNotificationApp
 		/// Gets called by the native platforms if a remote notification was received.
 		/// </summary>
 		/// <returns>The received remote notification.</returns>
-		public void OnReceivedRemoteNotification (string message)
+		public void OnNativeReceivedRemoteNotification (string message)
 		{
 			MessagingCenter.Send (this, ReceivedRemoteNotificationMessage, message);
 		}

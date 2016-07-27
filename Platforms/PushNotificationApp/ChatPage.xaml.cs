@@ -59,7 +59,8 @@ namespace PushNotificationApp
 			this.IsBusy = true;
 			this.btnSend.IsEnabled = false;
 
-			bool success = await App.PushManager.SendNotificationAsync(App.UniqueDeviceId, this.txtMessage.Text, default(CancellationToken), PushNotificationsClientServerShared.NotificationTemplate.Happy);
+			var mood = (PushNotificationsClientServerShared.NotificationTemplate)this.pickerMood.SelectedIndex;
+			bool success = await App.PushManager.SendNotificationAsync(App.UniqueDeviceId, this.txtMessage.Text, default(CancellationToken), mood);
 
 			if(success)
 			{

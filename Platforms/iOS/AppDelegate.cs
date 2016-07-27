@@ -62,7 +62,7 @@ namespace PushNotificationApp.iOS
 			// Surprisingly, this seems to work. The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
 			var parsedDeviceToken = deviceToken.Description.Trim ('<', '>').Replace (" ", string.Empty).ToUpperInvariant ();
 			// Let out Forms app know that we have a token.
-			this.formsApp.OnRegisteredForRemoteNotifications (parsedDeviceToken);
+			this.formsApp.OnNativeRegisteredForRemoteNotifications (parsedDeviceToken);
 		}
 
 
@@ -76,7 +76,7 @@ namespace PushNotificationApp.iOS
 		public override void FailedToRegisterForRemoteNotifications (UIApplication application, NSError error)
 		{
 			Console.WriteLine ($"Failed to register for remote notifications: {error.Description}");
-			this.formsApp.OnFailedToRegisterForRemoteNotifications (error.Description);
+			this.formsApp.OnNativeFailedToRegisterForRemoteNotifications (error.Description);
 		}
 
 		/// <summary>
@@ -97,7 +97,7 @@ namespace PushNotificationApp.iOS
 
 			// Extract the message from the native data and forward to Forms.
 			var msg = ((NSDictionary)userInfo.ValueForKey(new NSString("aps"))).ValueForKey(new NSString("alert")) as NSString;
-			this.formsApp.OnReceivedRemoteNotification (msg);
+			this.formsApp.OnNativeReceivedRemoteNotification (msg);
 
 			// We must call the completion handler as soon as possible, max. after 30 seconds, otherwise the app gets terminated.
 			// If we use notifications to download something, we would return "UIBackgroundFetchResult.NewData".
@@ -117,11 +117,6 @@ namespace PushNotificationApp.iOS
 		{
 			// For details see: https://developer.apple.com/library/ios/documentation/UIKit/Reference/UIApplicationDelegate_Protocol/index.html#//apple_ref/occ/intfm/UIApplicationDelegate/application:handleActionWithIdentifier:forRemoteNotification:completionHandler:
 		}
-	}
-
-	public class NativePayload
-	{
-		public string Alert { get; set; }
 	}
 }
 

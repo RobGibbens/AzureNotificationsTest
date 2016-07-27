@@ -5,6 +5,14 @@
 		x:Class="PushNotificationApp.ChatPage"
 		Title="Chat">
 	<StackLayout>
+		<Picker x:Name="pickerMood" Title="How are you?" SelectedIndex="1">
+			<Picker.Items>
+				<x:String>Feeling neutral.</x:String> 
+				<x:String>😀 - I'm happy!</x:String> 
+				<x:String>☹️ - I'm sad...</x:String> 
+			</Picker.Items>
+		</Picker>
+		
 		<StackLayout Orientation="Horizontal" HorizontalOptions="FillAndExpand">
 			<Entry x:Name="txtMessage" Placeholder="say something" HorizontalOptions="FillAndExpand" Keyboard="Text"/>
 			<Button x:Name="btnSend" Text="Send" BackgroundColor="Blue" TextColor="Yellow" Clicked="HandleSendClicked" WidthRequest="80"/>
