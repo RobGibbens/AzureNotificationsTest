@@ -27,9 +27,9 @@ namespace PushNotificationApp
 		{
 			get
 			{
-				object pushDeviceId = null;
-				App.Current.Properties.TryGetValue ("DeviceToken", out pushDeviceId);
-				return (string)pushDeviceId;
+				object token = null;
+				App.Current.Properties.TryGetValue ("DeviceToken", out token);
+				return (string)token;
 			}
 			set
 			{
@@ -40,17 +40,17 @@ namespace PushNotificationApp
 		/// <summary>
 		/// The unique ID used to identify this app/device when registered for Azure push notifications.
 		/// </summary>
-		public static string PushDeviceId
+		public static string UniqueDeviceId
 		{
 			get
 			{
-				object pushDeviceId = null;
-				App.Current.Properties.TryGetValue ("PushDeviceId", out pushDeviceId);
-				return (string)pushDeviceId;
+				object id = null;
+				App.Current.Properties.TryGetValue ("UniqueDeviceId", out id);
+				return (string)id;
 			}
 			set
 			{
-				App.Current.Properties ["PushDeviceId"] = value;
+				App.Current.Properties ["UniqueDeviceId"] = value;
 			}
 		}
 
@@ -99,7 +99,7 @@ namespace PushNotificationApp
 			// Every device is assigned a unique installation ID by the backend.
 			// If the current device ID is null, a new installation will be created, otherwise an existing will be updated.
 			var deviceInfo = new DeviceInformation {
-				Id = App.PushDeviceId,
+				UniqueId = App.UniqueDeviceId,
 				// The native token is needed by Azure to send a notification to the device.
 				DeviceToken = deviceToken,
 				DeviceName = App.DeviceName
@@ -130,9 +130,9 @@ namespace PushNotificationApp
 				}
 				else
 				{
-					App.Current.MainPage.DisplayAlert ("Registration complete", $"Unique device ID: {registeredDeviceInfo.Id} for token {deviceToken}", "OK");
+					App.Current.MainPage.DisplayAlert ("Registration complete", $"Unique device ID: {registeredDeviceInfo.UniqueId} for token {deviceToken}", "OK");
 					// Remember new installation ID.
-					App.PushDeviceId = registeredDeviceInfo.Id;
+					App.UniqueDeviceId = registeredDeviceInfo.UniqueId;
 				}
 
 				MessagingCenter.Send (this, RegisteredForRemoteNotificationsMessage, deviceToken);

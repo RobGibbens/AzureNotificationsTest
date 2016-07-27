@@ -50,7 +50,7 @@ namespace PushNotificationApp
 
 		async void HandleSendClicked (object sender, EventArgs e)
 		{
-			if(string.IsNullOrWhiteSpace(App.PushDeviceId) || string.IsNullOrWhiteSpace(App.DeviceToken))
+			if(string.IsNullOrWhiteSpace(App.UniqueDeviceId) || string.IsNullOrWhiteSpace(App.DeviceToken))
 			{
 				this.DisplayAlert("Cannot send", "Your device seems to be unregistered.", "OK");
 				return;
@@ -59,7 +59,7 @@ namespace PushNotificationApp
 			this.IsBusy = true;
 			this.btnSend.IsEnabled = false;
 
-			bool success = await App.PushManager.SendNotificationAsync(App.PushDeviceId, this.txtMessage.Text, default(CancellationToken), PushNotificationsClientServerShared.NotificationTemplate.Happy);
+			bool success = await App.PushManager.SendNotificationAsync(App.UniqueDeviceId, this.txtMessage.Text, default(CancellationToken), PushNotificationsClientServerShared.NotificationTemplate.Happy);
 
 			if(success)
 			{
