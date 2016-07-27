@@ -33,7 +33,9 @@ namespace PushNotificationsServer.Controllers.API
 			enableTestSend: USE_TEST_SENDING);
 
 		/// <summary>
-		/// Gets all registered devices from the database.
+		/// Gets all installed devices from the database.
+		/// Note: it is not possible to query Azure for installations! Registrations can be retrieved, but
+		/// we are not using the registration model.
 		/// </summary>
 		/// <returns>device information</returns>
 		[Route("")]
@@ -56,7 +58,16 @@ namespace PushNotificationsServer.Controllers.API
 
 			return result;
 		}
+
+		[Route("housekeeping")]
+		[HttpGet]
 		
+		public async Task<IEnumerable<DeviceInformation>> PerformHouseKeepingAsync()
+		{
+			// Returns an exception about exceeding quota...? How to find out about expired devices then?
+			var uri = await this.notificationHubClient.GetFeedbackContainerUriAsync().ConfigureAwait(false);
+			return null;
+		}
 
 		/// <summary>
 		/// Deletes the installation associated with the ID.
@@ -100,7 +111,7 @@ namespace PushNotificationsServer.Controllers.API
 		}
 
 		/// <summary>
-		/// Registers or updates a device.
+		/// Registers or updates a device. Uses the "Installation" model.
 		/// 
 		/// Headers:
 		/// Accept:application/json
