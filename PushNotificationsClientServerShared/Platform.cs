@@ -1,5 +1,8 @@
 ﻿namespace PushNotificationsClientServerShared
 {
+	/// <summary>
+	/// Supported client platforms.
+	/// </summary>
 	public enum Platform
 	{
 		Unknown = -1,

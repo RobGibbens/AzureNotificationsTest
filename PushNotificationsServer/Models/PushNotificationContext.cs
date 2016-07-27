@@ -1,5 +1,6 @@
 ﻿using System.Data.Entity;
 using System.Linq;
+using PushNotificationsClientServerShared;
 
 namespace PushNotificationsServer.Models
 {
@@ -16,21 +17,21 @@ namespace PushNotificationsServer.Models
         {
         }
 
-        public DbSet<CustomDeviceInstallation> CustomDeviceInstallations { get; set; }
+        public DbSet<DbDeviceInformation> RegisteredDevices { get; set; }
 
 		/// <summary>
 		/// Helper for find if a device/platform combination is already registered.
 		/// </summary>
 		/// <param name="uniqueDeviceId"></param>
 		/// <returns></returns>
-		public bool IsDeviceRegistered(string uniqueDeviceId) => this.CustomDeviceInstallations.Any(e => e.Id == uniqueDeviceId);
+		public bool IsDeviceRegistered(string uniqueDeviceId) => this.RegisteredDevices.Any(e => e.UniqueId == uniqueDeviceId);
 
 		/// <summary>
-		/// Gets an installation by its unique device ID.
+		/// Gets a device info by its unique device ID.
 		/// </summary>
-		/// <param name="installationId"></param>
+		/// <param name="uniqueId"></param>
 		/// <returns></returns>
-		public CustomDeviceInstallation GetInstallation(string installationId) => this.CustomDeviceInstallations.FirstOrDefault(d => d.Id == installationId);
+		public DbDeviceInformation GetDeviceInfo(string uniqueId) => this.RegisteredDevices.FirstOrDefault(d => d.UniqueId == uniqueId);
 
 	}
 }

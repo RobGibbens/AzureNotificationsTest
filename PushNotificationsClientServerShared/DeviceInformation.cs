@@ -1,16 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace PushNotificationsClientServerShared
 {
 	/// <summary>
-	/// Device information.
+	/// Device information. This gets stored in the local DB on the server and is used to register a client device.
 	/// </summary>
-	public class DeviceInformation
+	public class DeviceInformation : IDeviceInformation
 	{
 		/// <summary>
 		/// Unique ID of each device. Use NULL to register a new device.
 		/// </summary>
-		public string Id
+		public virtual string UniqueId
 		{
 			get;
 			set;
@@ -27,7 +28,7 @@ namespace PushNotificationsClientServerShared
 		}
 
 		/// <summary>
-		/// Gets or sets the device token.
+		/// Gets or sets the device token ("push channel").
 		/// </summary>
 		[Required]
 		public string DeviceToken
@@ -46,7 +47,12 @@ namespace PushNotificationsClientServerShared
 			set;
 		}
 
-		public override string ToString() => $"[{nameof(DeviceInformation)}] Platform = {this.Platform}, DeviceToken = {this.DeviceToken}, DeviceName={this.DeviceName}";
+		/// <summary>
+		/// Stores when this device last registered with the backend.
+		/// </summary>
+		public DateTime? LastUpdated { get; set; }
+
+		public override string ToString() => $"[{nameof(DeviceInformation)}] Unique ID = {this.UniqueId}, Platform = {this.Platform}, DeviceToken = {this.DeviceToken}, DeviceName={this.DeviceName}";
 	}
 }
 

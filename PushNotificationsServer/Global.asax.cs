@@ -7,6 +7,7 @@ using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
+using PushNotificationsClientServerShared;
 using PushNotificationsServer.Models;
 
 namespace PushNotificationsServer
@@ -16,13 +17,14 @@ namespace PushNotificationsServer
 		protected override void Seed(PushNotificationContext context)
 		{
 			// Always initialize with a device that can be used to test sending.
-			var sendTestDevice = new CustomDeviceInstallation
+			var sendTestDevice = new DbDeviceInformation
 			{
-				DeviceName = "Send Test Device"	,
-				Id = "sendtest",
-				InstallationId = "sendtest"
+				DeviceName = "Send Test Device",
+				UniqueId = "sendtest",
+				DeviceToken = "sendtest",
+				Platform = Platform.Unknown
 			};
-			context.CustomDeviceInstallations.Add(sendTestDevice);
+			context.RegisteredDevices.Add(sendTestDevice);
 
 			base.Seed(context);
 		}

@@ -2,17 +2,28 @@
 using System.Collections.Generic;
 using System.Data.Entity.Migrations;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Azure.NotificationHubs;
+using Microsoft.WindowsAzure.Storage.Blob;
 using PushNotificationsClientServerShared;
 using PushNotificationsServer.Models;
 
 namespace PushNotificationsServer.Controllers.API
 {
+	/// <summary>
+	/// The backend which talks to the Azure Notification Hub.
+	/// This is what the client apps communicate with in order to register for push notifications.
+	/// The backend is using the "Installation" model and not the "Registration" model.
+	/// There is little documentation about the installation model. Some info can be found at https://msdn.microsoft.com/en-us/magazine/dn948105.aspx
+	/// The Installation API is alternative mechanism for registration management. Instead of maintaining multiple registrations which is not trivial and may be easily
+	/// done wrongly or inefficiently, it is now possible to use SINGLE Installation object.
+	/// Installation contains everything you need: push channel (device token), tags, templates, secondary tiles (for WNS and APNS).
+	/// You don't need to call thes ervice to get ID anymore - just generate GUID or any other identifier, keep it on device and send to your backend together with push channel (device token).
+	/// </summary>
 	[RoutePrefix("api")]
 	public class ManagePushDevicesController : ApiController
 	{
@@ -20,63 +31,90 @@ namespace PushNotificationsServer.Controllers.API
 		/// If set to TRUE, Azure will throttle the sent notifications and limit them to a maximum of 10.
 		/// In exchange, we get feedback if an attempt to send succeeded and how many devices were reached.
 		/// </summary>
-		#if DEBUG
+#if DEBUG
 		const bool USE_TEST_SENDING = true;
-		#else
+#else
 		const bool USE_TEST_SENDING = false;
-		#endif
+#endif
 
+		/// <summary>
+		/// Change this to the full access connection string of the Notification Hub instance used. This can be found at the Access Policies page of your Azure Notification Hub via portal.azure.com
+		/// </summary>
+		const string NotificationHubConnectionString = "Endpoint=sb://xamupushnotificationshub.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=ABj04HkW6HFxkV00HXYdEuiArKuE9hllWltmKFBJrAA=";
+		
+		/// <summary>
+		/// Even though this is called a path it is just the name of notification hub used. This can be found via portal.azure.com
+		/// </summary>
+		const string NotificationHubPath = "XamUPushNotificationsHub";
+
+		/// <summary>
+		/// Local database to store information about registered devices.
+		/// </summary>
 		readonly PushNotificationContext db = new PushNotificationContext();
+
+		/// <summary>
+		/// Gives access to the Azure Push Notifications service. From package https://www.nuget.org/packages/Microsoft.Azure.NotificationHubs/
+		/// Note: using this client simplifies things a lot compared to the REST API which is also available (https://msdn.microsoft.com/en-us/library/azure/dn495827.aspx)
+		/// </summary>
 		readonly NotificationHubClient notificationHubClient = NotificationHubClient.CreateClientFromConnectionString(
-			connectionString: "Endpoint=sb://xamupushnotificationshub.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=ABj04HkW6HFxkV00HXYdEuiArKuE9hllWltmKFBJrAA=",
-			notificationHubPath: "XamUPushNotificationsHub",
+			connectionString: NotificationHubConnectionString,
+			notificationHubPath: NotificationHubPath,
 			enableTestSend: USE_TEST_SENDING);
 
 		/// <summary>
 		/// Gets all installed devices from the database.
-		/// Note: it is not possible to query Azure for installations! Registrations can be retrieved, but
+		/// Note: it is not possible to query Azure for installations! "Registrations" can be retrieved, but
 		/// we are not using the registration model.
 		/// </summary>
 		/// <returns>device information</returns>
 		[Route("")]
 		[HttpGet]
-		public IQueryable<DeviceInformation> GetAllRegisteredDevices()
-		{
-			var result = this.db.CustomDeviceInstallations.Select(install => new DeviceInformation
-			{
-				Id = install.Id,
-				DeviceToken = install.PushChannel,
-				
-				// Cannot use this nice extension method because it cannot be turned into an expression.
-				//Platform = install.Platform.ToDeviceInfoPlatform(),
-				Platform =
-					install.Platform == NotificationPlatform.Apns ? Platform.iOS :
-					install.Platform == NotificationPlatform.Gcm ? Platform.Android :
-					Platform.Unknown,
-				DeviceName = install.DeviceName
-			});
+		public IQueryable<IDeviceInformation> GetAllRegisteredDevices() => this.db.RegisteredDevices;
 
-			return result;
-		}
-
+		/// <summary>
+		/// The idea behind this method is to get information from Apple, Google etc about expired push channels ("device tokens") so
+		/// we can delete them from our local DB. Unfortunately, nobody really seems to know how this works, particularly not if
+		/// using the new "Installation" model. So for now (2016-07-21), this is a NOP.
+		/// See: http://stackoverflow.com/questions/38108730/how-to-get-all-installations-when-using-azure-notification-hubs-installation-mod
+		/// </summary>
+		/// <returns></returns>
 		[Route("housekeeping")]
 		[HttpGet]
-		
-		public async Task<IEnumerable<DeviceInformation>> PerformHouseKeepingAsync()
+		[ResponseType(typeof(IEnumerable<IDeviceInformation>))]
+		public async Task<IHttpActionResult> PerformHouseKeepingAsync()
 		{
-			// Returns an exception about exceeding quota...? How to find out about expired devices then?
+			// To use this API we must use a paid subscription of the Notifiation Hub. As of July 2016, This can only be configured on
+			// the old Azure portal at  https://manage.windowsazure.com/portal: In there, select the namespace, select the hub,
+			// choose scale tab and select the  “Standard”  tier and save.
+			// The returned URL points to a blob container which holds the information about unused devices. We have to get the blob content
+			// and parse it (XML). The blob URL is a shared type (https://www.simple-talk.com/cloud/platform-as-a-service/azure-blob-storage-part-9-shared-access-signatures/).
+			// The format of the URL look like this: https://pushpnsfb1dc97e338026d3.blob.core.windows.net/00000000002000027386?sv=2015-07-08&sr=c&sig=sl3OaSdUOdcCy7z%2FWeMjHfHmEEuid8lLfn9a8tAHqxE%3D&se=2016-07-16T07:14:49Z&sp=rl
 			var uri = await this.notificationHubClient.GetFeedbackContainerUriAsync().ConfigureAwait(false);
-			return null;
+
+			// We can use the Azure Storage Client to get details about the blob.
+			var container = new CloudBlobContainer(uri);
+			foreach (var blobItem in container.ListBlobs())
+			{
+				var blob = new CloudBlob(blobItem.Uri);
+				using (var blobStream = blob.OpenRead())
+				using (var reader = new StreamReader(blobStream))
+				{
+					var xml = reader.ReadToEnd();
+
+				}
+			}
+
+			return this.BadRequest("This method is currently not implemented.");
 		}
 
 		/// <summary>
-		/// Deletes the installation associated with the ID.
+		/// Deletes the installation associated with the ID. Deletes from the Azure Nofification Hub and from the local DB.
 		/// </summary>
 		/// <param name="installationId">unique ID of the device to delete. Note: this is NOT the device token</param>
 		/// <returns>NULL if deletion failed, otherwise the deleted device information.</returns>
 		[Route("register/{installationId}")]
 		[HttpDelete]
-		[ResponseType(typeof(DeviceInformation))]
+		[ResponseType(typeof(IDeviceInformation))]
 		public IHttpActionResult UnregisterDevice(string installationId)
 		{
 			if (string.IsNullOrWhiteSpace(installationId))
@@ -88,26 +126,18 @@ namespace PushNotificationsServer.Controllers.API
 			// Note: the ID is the GUID the backend assigns to each device. Don't confuse with the device token.
 			this.notificationHubClient.DeleteInstallation(installationId);
 
-			var installation = this.db.GetInstallation(installationId);
-			if (installation == null)
+			var deviceInfo = this.db.GetDeviceInfo(installationId);
+			if (deviceInfo == null)
 			{
 				return this.NotFound();
 			}
-			
+
 			// Delete locally.
-			this.db.CustomDeviceInstallations.Remove(installation);
+			this.db.RegisteredDevices.Remove(deviceInfo);
 			this.db.SaveChanges();
 
 			// Return the deleted object.
-			var info = new DeviceInformation
-			{
-				Id = installation.Id,
-				DeviceToken = installation.PushChannel,
-				Platform = installation.Platform.ToDeviceInfoPlatform(),
-				DeviceName = installation.DeviceName
-			};
-			
-			return this.Ok(info);
+			return this.Ok(deviceInfo);
 		}
 
 		/// <summary>
@@ -125,10 +155,10 @@ namespace PushNotificationsServer.Controllers.API
 		/// }
 		/// </summary>
 		/// <param name="deviceInfo">Information about the device. Set the 'Id' property to NULL to create a new device.</param>
-		/// <returns>the installation ID of the device. Must be stored by client to allow updating the installation.</returns>
+		/// <returns>the <see cref="IDeviceInformation"/> object. The client must store the unique ID.</returns>
 		[Route("register")]
 		[HttpPost]
-		[ResponseType(typeof(string))]
+		[ResponseType(typeof(DeviceInformation))]
 		public IHttpActionResult RegisterOrUpdateDevice([FromBody] DeviceInformation deviceInfo)
 		{
 			if (deviceInfo == null)
@@ -141,56 +171,52 @@ namespace PushNotificationsServer.Controllers.API
 				return BadRequest("Device token must be specified.");
 			}
 
-			CustomDeviceInstallation installation;
-
-			if (deviceInfo.Id != null)
+			// Check for existing device.
+			if (deviceInfo.UniqueId != null && !this.db.IsDeviceRegistered(deviceInfo.UniqueId))
 			{
-				// Check for existing device.
-				installation = this.db.CustomDeviceInstallations.FirstOrDefault(d => d.InstallationId == deviceInfo.Id);
-				if (installation == null)
-				{
-					return this.BadRequest($"Cannot find device to update for ID [{deviceInfo.Id}].");
-				}
-			}
-			else
-			{
-				if (string.IsNullOrWhiteSpace(deviceInfo.DeviceName))
-				{
-					return this.BadRequest("Device name is required when registering a new device.");
-				}
-
-				// Every device/installation gets a unique ID.
-				installation = new CustomDeviceInstallation();
-				installation.Id = Guid.NewGuid().ToString(); 
+				return this.BadRequest($"Cannot find device to update for ID [{deviceInfo.UniqueId}]. Did you mean to create a new one?");
 			}
 
-			// Convert our platform information over to Azure's NotificationPlatform.
-			installation.Platform = deviceInfo.Platform.ToNotificationPlatform();
-			// The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
-			installation.PushChannel = deviceInfo.DeviceToken;
-			installation.DeviceName = deviceInfo.DeviceName;
-			installation.LastUpdated = DateTime.UtcNow;
-			// Using tags: here we add a tag to identify the platform. A tag can be anything that groups devices together.
-			//             When sending a templated notification a tag expressions can be specified. Notifications will then only
-			//             be sent to Installations with a matching tag. If multiple tags match, multiple notifications will be sent.
-			// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
-			installation.Tags = new List<string> {
-				// Tags only allow certain characters: A tag can be any string, up to 120 characters, containing alphanumeric and the following non-alphanumeric characters: ‘_’, ‘@’, ‘#’, ‘.’, ‘:’, ‘-’. 
-				// Remember the platform as a tag.
-				$"platform-{deviceInfo.Platform.ToString()}",
-				// Remember the device ID as tag. This allows sending to specific devices easily.
+			if (string.IsNullOrWhiteSpace(deviceInfo.DeviceName))
+			{
+				return this.BadRequest("Device name is required when registering a new device.");
+			}
+
+			// Every device/installation gets a unique ID.
+			var installation = new Installation
+			{
+				// Every installation gets a unique ID.
+				InstallationId = Guid.NewGuid().ToString(),
+				Platform = deviceInfo.Platform.ToAzureNotificationPlatform(),
+				
+				// The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
+				PushChannel = deviceInfo.DeviceToken,
+				
+				// Using tags: here we add a tag to identify the platform. A tag can be anything that groups devices together.
+				//             When sending a templated notification, a tag expressions can be specified. Notifications will then only
+				//             be sent to Installations with a matching tag. If multiple tags match, multiple notifications will be sent.
+				// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
+				Tags = new List<string> {
+					// Tags only allow certain characters: A tag can be any string, up to 120 characters, containing alphanumeric and the following non-alphanumeric characters: ‘_’, ‘@’, ‘#’, ‘.’, ‘:’, ‘-’. 
+					// Remember the platform as a tag.
+					$"platform-{deviceInfo.Platform.ToString()}",
+				}
 			};
-			installation.AddOrUpdateTemplates();
 
-			// Save to local DB. 
-			this.db.CustomDeviceInstallations.AddOrUpdate(installation);
-			this.db.SaveChanges();
+			// Generate the templates we use for sending.
+			installation.AddOrUpdateTemplates();
 
 			// Register with Azure Notification Hub.
 			this.notificationHubClient.CreateOrUpdateInstallation(installation);
 
-			// Return the unique ID.
-			return this.Ok(installation.Id);
+			// Save to local DB. 
+			deviceInfo.UniqueId = installation.InstallationId;
+			deviceInfo.LastUpdated = DateTime.UtcNow;
+			this.db.RegisteredDevices.AddOrUpdate(new DbDeviceInformation(deviceInfo));
+			this.db.SaveChanges();
+
+			// Return the device info, now with updated fields.
+			return this.Ok(deviceInfo);
 		}
 
 		/// <summary>
@@ -237,7 +263,7 @@ namespace PushNotificationsServer.Controllers.API
 				return this.NotFound();
 			}
 
-			var senderInstallation = this.db.GetInstallation(sendData.SenderId);
+			var senderInstallation = this.db.GetDeviceInfo(sendData.SenderId);
 			Debug.Assert(senderInstallation != null, "Should never be NULL if we get here because IsDeviceRegistered() returned TRUE.");
 
 			string tags = string.Empty;
@@ -257,7 +283,8 @@ namespace PushNotificationsServer.Controllers.API
 
 			var result = await this.notificationHubClient.SendTemplateNotificationAsync(
 				// Set placeholders of templates.
-				properties:	new Dictionary<string, string> {
+				properties: new Dictionary<string, string>
+				{
 					["sender"] = senderInstallation.DeviceName,
 					["message"] = sendData.Message
 				},
@@ -270,7 +297,7 @@ namespace PushNotificationsServer.Controllers.API
 			{
 				Debug.WriteLine($"{nameof(SendNotification)}: Failed to send to {result.Failure} recipients. {result.Success} sent successfully.");
 			}
-			
+
 			return this.Ok();
 		}
 
@@ -293,8 +320,8 @@ namespace PushNotificationsServer.Controllers.API
 
 			return this.Ok(exists);
 		}
-		
-	
+
+
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing)

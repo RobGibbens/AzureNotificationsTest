@@ -66,7 +66,7 @@ namespace PushNotificationApp
 			// Every device is assigned a unique installation ID by the backend.
 			// If the installation ID is null, a new installation will be created, otherwise an existing will be updated.
 			var deviceInfo = new DeviceInformation {
-				Id = App.PushDeviceId,
+				UniqueId = App.PushDeviceId,
 				// The native token is needed by Azure to send a notification to the device.
 				DeviceToken = this.currentDeviceToken,
 				DeviceName = App.DeviceName

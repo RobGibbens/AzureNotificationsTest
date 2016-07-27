@@ -32,6 +32,7 @@
     <NoStdLib>false</NoStdLib>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="IDeviceInformation.cs" />
     <Compile Include="PushNotificationManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
