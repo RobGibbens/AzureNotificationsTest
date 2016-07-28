@@ -182,32 +182,36 @@ namespace PushNotificationsServer.Controllers.API
 				return this.BadRequest("Device name is required when registering a new device.");
 			}
 
-			// Every device/installation gets a unique ID.
-			var installation = new Installation
+			if (string.IsNullOrWhiteSpace(deviceInfo.UniqueId))
 			{
-				// Every installation gets a unique ID.
-				InstallationId = Guid.NewGuid().ToString(),
-				Platform = deviceInfo.Platform.ToAzureNotificationPlatform(),
-				
-				// The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
-				PushChannel = deviceInfo.DeviceToken,
-				
-				// Using tags: here we add a tag to identify the platform. A tag can be anything that groups devices together.
-				//             When sending a templated notification, a tag expressions can be specified. Notifications will then only
-				//             be sent to Installations with a matching tag. If multiple tags match, multiple notifications will be sent.
-				// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
-				Tags = new List<string> {
-					// Tags only allow certain characters: A tag can be any string, up to 120 characters, containing alphanumeric and the following non-alphanumeric characters: ‘_’, ‘@’, ‘#’, ‘.’, ‘:’, ‘-’. 
-					// Remember the platform as a tag.
-					$"platform-{deviceInfo.Platform.ToString()}",
-				}
-			};
+				deviceInfo.UniqueId = Guid.NewGuid().ToString();
+				var installation = new Installation
+				{
+					// Every installation gets a unique ID.
+					InstallationId = deviceInfo.UniqueId,
+					Platform = deviceInfo.Platform.ToAzureNotificationPlatform(),
 
-			// Generate the templates we use for sending.
-			installation.AddOrUpdateTemplates();
+					// The token must be a string of hexadecimal numbers, otherwise registering with Azure will fail.
+					PushChannel = deviceInfo.DeviceToken,
 
-			// Register with Azure Notification Hub.
-			this.notificationHubClient.CreateOrUpdateInstallation(installation);
+					// Using tags: here we add a tag to identify the platform. A tag can be anything that groups devices together.
+					//             When sending a templated notification, a tag expressions can be specified. Notifications will then only
+					//             be sent to Installations with a matching tag. If multiple tags match, multiple notifications will be sent.
+					// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
+					Tags = new List<string> {
+						// Tags only allow certain characters: A tag can be any string, up to 120 characters, containing alphanumeric and the following non-alphanumeric characters: ‘_’, ‘@’, ‘#’, ‘.’, ‘:’, ‘-’. 
+						// Remember the platform as a tag.
+						$"platform-{deviceInfo.Platform.ToString()}",
+					}
+				};
+
+				// Generate the templates we use for sending.
+				installation.AddOrUpdateTemplates();
+
+				// Register with Azure Notification Hub.
+				// Note: even though this is supposed to update an existing installation, it fails with a SocketException...work in progress, I guess.
+				this.notificationHubClient.CreateOrUpdateInstallation(installation);
+			}
 
 			// Save to local DB. 
 			deviceInfo.UniqueId = installation.InstallationId;
