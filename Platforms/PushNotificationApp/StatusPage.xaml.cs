@@ -60,10 +60,16 @@ namespace PushNotificationApp
 
 		async void HandleUnregisterClicked (object sender, System.EventArgs e)
 		{
+			if(string.IsNullOrWhiteSpace(App.UniqueDeviceId))
+			{
+				this.DisplayAlert("Unregistering failed", "Unique device ID not set - cannot unregister.", "OK");
+				return;
+			}
+
 			this.IsBusy = true;
 			try
 			{
-				var deviceInfo = await App.PushManager.UnregisterDeviceAsync(App.UniqueDeviceId).ConfigureAwait(false);
+				var deviceInfo = await App.PushManager.UnregisterDeviceAsync(App.UniqueDeviceId);
 				this.DisplayAlert("Unregistering suceeded", "Device sucessfully unregistered", "OK");
 			}
 			catch(Exception ex)

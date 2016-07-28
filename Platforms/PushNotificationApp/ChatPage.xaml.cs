@@ -34,6 +34,7 @@ namespace PushNotificationApp
 			});
 
 			MessagingCenter.Subscribe<App, string> (this, App.ReceivedRemoteNotificationMessage, this.OnReceivedRemoteMessage);
+			this.pickerMood.SelectedIndex = 1;
 		}
 
 		void OnReceivedRemoteMessage (object sender, string message)
