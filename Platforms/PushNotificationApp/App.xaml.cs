@@ -4,6 +4,7 @@ using PushNotificationsClientServerShared;
 using System;
 using Plugin.DeviceInfo;
 using System.Threading.Tasks;
+using Plugin.Settings;
 
 namespace PushNotificationApp
 {
@@ -29,13 +30,12 @@ namespace PushNotificationApp
 		{
 			get
 			{
-				object token = null;
-				App.Current.Properties.TryGetValue ("DeviceToken", out token);
-				return (string)token;
+				string token = CrossSettings.Current.GetValueOrDefault("DeviceToken", (string)null);
+				return token;
 			}
 			set
 			{
-				App.Current.Properties ["DeviceToken"] = value;
+				CrossSettings.Current.AddOrUpdateValue("DeviceToken", value);
 			}
 		}
 
@@ -46,13 +46,17 @@ namespace PushNotificationApp
 		{
 			get
 			{
-				object id = null;
-				App.Current.Properties.TryGetValue ("UniqueDeviceId", out id);
-				return (string)id;
+				string id = CrossSettings.Current.GetValueOrDefault("UniqueDeviceId", (string)null);
+
+				return id;
 			}
 			set
 			{
-				App.Current.Properties ["UniqueDeviceId"] = value;
+				if(string.IsNullOrWhiteSpace(value))
+				{
+					value = null;
+				}
+				CrossSettings.Current.AddOrUpdateValue("UniqueDeviceId", value);
 			}
 		}
 
@@ -64,13 +68,12 @@ namespace PushNotificationApp
 		{
 			get
 			{
-				object deviceName = null;
-				App.Current.Properties.TryGetValue ("DeviceName", out deviceName);
-				return (string)deviceName;
+				string deviceName = CrossSettings.Current.GetValueOrDefault("DeviceName", $"Unknown device {Guid.NewGuid ().ToString ()}");
+				return deviceName;
 			}
 			set
 			{
-				App.Current.Properties ["DeviceName"] = value;
+				CrossSettings.Current.AddOrUpdateValue("DeviceName", value);
 			}
 		}
 
@@ -90,12 +93,6 @@ namespace PushNotificationApp
 			if (string.IsNullOrWhiteSpace (deviceToken))
 			{
 				return;
-			}
-
-			// Create a random device name if we don't have one. Can be changed through the UI.
-			if (string.IsNullOrWhiteSpace (App.DeviceName))
-			{
-				App.DeviceName = $"Unknown device {Guid.NewGuid ().ToString ()}";
 			}
 
 			App.DeviceToken = deviceToken;

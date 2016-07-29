@@ -3,7 +3,8 @@
 		xmlns="http://xamarin.com/schemas/2014/forms"
 		xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
 		x:Class="PushNotificationApp.ChatPage"
-		Title="Chat">
+		Title="Chat"
+		Icon="chat.png">
 	<StackLayout>
 		<Picker x:Name="pickerMood" Title="How are you?" SelectedIndex="1">
 			<Picker.Items>
