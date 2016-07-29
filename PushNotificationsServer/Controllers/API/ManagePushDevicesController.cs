@@ -110,23 +110,23 @@ namespace PushNotificationsServer.Controllers.API
 		/// <summary>
 		/// Deletes the installation associated with the ID. Deletes from the Azure Nofification Hub and from the local DB.
 		/// </summary>
-		/// <param name="installationId">unique ID of the device to delete. Note: this is NOT the device token</param>
+		/// <param name="uniqueId">unique ID of the device to delete. Note: this is NOT the device token</param>
 		/// <returns>NULL if deletion failed, otherwise the deleted device information.</returns>
 		[Route("register/{installationId}")]
 		[HttpDelete]
 		[ResponseType(typeof(IDeviceInformation))]
-		public IHttpActionResult UnregisterDevice(string installationId)
+		public IHttpActionResult UnregisterDevice(string uniqueId)
 		{
-			if (string.IsNullOrWhiteSpace(installationId))
+			if (string.IsNullOrWhiteSpace(uniqueId))
 			{
 				return this.BadRequest("Installation ID is required.");
 			}
 
 			// Delete from Azure.
 			// Note: the ID is the GUID the backend assigns to each device. Don't confuse with the device token.
-			this.notificationHubClient.DeleteInstallation(installationId);
+			this.notificationHubClient.DeleteInstallation(uniqueId);
 
-			var deviceInfo = this.db.GetDeviceInfo(installationId);
+			var deviceInfo = this.db.GetDeviceInfo(uniqueId);
 			if (deviceInfo == null)
 			{
 				return this.NotFound();
@@ -214,7 +214,6 @@ namespace PushNotificationsServer.Controllers.API
 			}
 
 			// Save to local DB. 
-			deviceInfo.UniqueId = installation.InstallationId;
 			deviceInfo.LastUpdated = DateTime.UtcNow;
 			this.db.RegisteredDevices.AddOrUpdate(new DbDeviceInformation(deviceInfo));
 			this.db.SaveChanges();
