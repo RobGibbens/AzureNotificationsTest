@@ -110,8 +110,8 @@
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Helpers\Settings.cs" />
-    <Compile Include="GcmBroadcastReceiver.cs" />
+    <Compile Include="MyGcmListenerService.cs" />
+    <Compile Include="BroadcastReceiverManifestInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AboutResources.txt" />

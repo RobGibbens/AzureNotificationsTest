@@ -14,6 +14,7 @@ using System;
 // and Google documentation:
 // Create a GCM app at: https://developers.google.com/mobile/add?platform=android (The package ID of the XS project must match!)
 // https://developer.xamarin.com/guides/cross-platform/application_fundamentals/notifications/android/google-cloud-messaging/#settingup
+// How to configure GCM for Azure Push Notifications: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-android-push-notification-google-gcm-get-started/
 
 
 // Cloud Messaging requires the Internet, WakeLock, and com.google.android.c2dm.permission.RECEIVE permissions.
@@ -25,14 +26,16 @@ using System;
 [assembly: UsesPermission ("@PACKAGE_NAME@.permission.C2D_MESSAGE")]
 
 
-// Server API key: AIzaSyBm3rres9hbvLA2QeWoqwmwzva5GlBz7P0
-// Sender ID: 287960406832
 
 namespace PushNotificationApp.Droid
 {
 	[Activity (Label = "PushNotificationApp.Droid", Icon = "@drawable/icon", Theme = "@style/MyTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
 	public class MainActivity : global::Xamarin.Forms.Platform.Android.FormsAppCompatActivity
 	{
+		// The number specified here is the "sender ID". This can be found in the Google Developer Console in the project settings; it's the the "project number".
+		public const string GoogleApiProjectNumber = "505186969470";
+		public const string GoogleServerApiKey = "AIzaSyDqSUOyNgoZnKHCtCKE7ik1j6nM9Gw8-hY";
+
 		public static App formsApp;
 
 		protected override void OnCreate (Bundle bundle)
@@ -46,6 +49,11 @@ namespace PushNotificationApp.Droid
 
 			MainActivity.formsApp = new App ();
 			LoadApplication (MainActivity.formsApp);
+		}
+
+		protected override void OnStart ()
+		{
+			base.OnStart ();
 
 			// Check for Google Play Services on the device. We need it to use GCM.
 			if (this.IsPlayServicesAvailable ())
@@ -120,12 +128,16 @@ namespace PushNotificationApp.Droid
 				// In a nutshell, Instance ID provides a unique ID for the app.
 				var instanceID = InstanceID.GetInstance (this);
 				// The number specified here is the "sender ID". This can be found in the Google Developer Console in the project settings; it's the the "project number".
-				var token = instanceID.GetToken ("29713501615", GoogleCloudMessaging.InstanceIdScope, null);
+				var token = instanceID.GetToken (MainActivity.GoogleApiProjectNumber, GoogleCloudMessaging.InstanceIdScope, null);
 
 				WriteLine ($"RegisterDeviceService - GCM Registration Token: {token}");
 
 				// Let out Forms app know that we have a token.
-				MainActivity.formsApp.OnNativeRegisteredForRemoteNotifications (token);
+				// IntentService uses queued worker threads. To do something on the UI we must invoke on the main thread.
+				var handler = new Handler(Looper.MainLooper);
+				handler.Post(() => {
+					MainActivity.formsApp.OnNativeRegisteredForRemoteNotifications (token);
+				});
 			}
 			catch (Exception e)
 			{
