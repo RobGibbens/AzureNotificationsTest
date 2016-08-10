@@ -47,15 +47,15 @@ namespace PushNotificationApp
 			get
 			{
 				string id = CrossSettings.Current.GetValueOrDefault("UniqueDeviceId", (string)null);
+				if(string.IsNullOrWhiteSpace(id))
+				{
+					id = null;
+				}
 
 				return id;
 			}
 			set
 			{
-				if(string.IsNullOrWhiteSpace(value))
-				{
-					value = null;
-				}
 				CrossSettings.Current.AddOrUpdateValue("UniqueDeviceId", value);
 			}
 		}
@@ -97,7 +97,7 @@ namespace PushNotificationApp
 
 			App.DeviceToken = deviceToken;
 
-			await this.RegisterDeviceAsync().ConfigureAwait(false);
+			await this.RegisterDeviceAsync();
 		}
 
 		public async Task RegisterDeviceAsync()
