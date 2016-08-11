@@ -15,17 +15,7 @@ using System;
 // Create a GCM app at: https://developers.google.com/mobile/add?platform=android (The package ID of the XS project must match!)
 // https://developer.xamarin.com/guides/cross-platform/application_fundamentals/notifications/android/google-cloud-messaging/#settingup
 // How to configure GCM for Azure Push Notifications: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-android-push-notification-google-gcm-get-started/
-
-
-// Cloud Messaging requires the Internet, WakeLock, and com.google.android.c2dm.permission.RECEIVE permissions.
-[assembly: UsesPermission ("com.google.android.c2dm.permission.RECEIVE")]
-[assembly: UsesPermission (Android.Manifest.Permission.Internet)]
-[assembly: UsesPermission (Android.Manifest.Permission.WakeLock)]
-// Cloud messaging also requires us to declare and use a special permission (@PACKAGE_NAME@.permission.C2D_MESSAGE).
-[assembly: Permission (Name = "@PACKAGE_NAME@.permission.C2D_MESSAGE")]
-[assembly: UsesPermission ("@PACKAGE_NAME@.permission.C2D_MESSAGE")]
-
-
+// Cloud Messaging requires various permissions. See AndroidManifest.xml for details.
 
 namespace PushNotificationApp.Droid
 {
