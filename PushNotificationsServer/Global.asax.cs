@@ -36,7 +36,7 @@ namespace PushNotificationsServer
         protected void Application_Start()
         {
 #if DEBUG
-			// Always regenerate DB while in debug mode.°
+			// Always regenerate DB while in debug mode.
 			Database.SetInitializer(new CustomDbInitializer());
 #endif
 

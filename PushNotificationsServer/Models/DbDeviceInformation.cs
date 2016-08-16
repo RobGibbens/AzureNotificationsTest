@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Data.SqlTypes;
 using PushNotificationsClientServerShared;
-
+ 
 namespace PushNotificationsServer.Models
 {
 	public class DbDeviceInformation : DeviceInformation
