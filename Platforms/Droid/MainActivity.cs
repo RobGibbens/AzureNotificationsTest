@@ -17,15 +17,22 @@ using System;
 // How to configure GCM for Azure Push Notifications: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-android-push-notification-google-gcm-get-started/
 // Cloud Messaging requires various permissions. See AndroidManifest.xml for details.
 
+
+// Steps to setup GCM on the server with Google:
+//    At https://developers.google.com/mobile/add?platform=android register a new project.
+//    This must be an "Android" project (even though we are sending via a custom server!). Be sure to correctly enter the package name of the client app.
+//    The project I am using has been generated with the account rene@c-sharx.net and has the name "AzureXamUPushDemo".
+//    The project ID is 90921695117, which is used as the "Sender ID" for GCM.
+// 	  The server API key is not used by the client app but by Azure. It is "AIzaSyCGD0_LsyLWCW1FOGpKFI8QrFUmUMj9FgA"
+
 namespace PushNotificationApp.Droid
 {
 	[Activity (Label = "PushNotificationApp.Droid", Icon = "@drawable/icon", Theme = "@style/MyTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
 	public class MainActivity : global::Xamarin.Forms.Platform.Android.FormsAppCompatActivity
 	{
 		// The number specified here is the "sender ID". This can be found in the Google Developer Console in the project settings; it's the the "project number".
-		public const string GoogleApiProjectNumber = "505186969470";
-		public const string GoogleServerApiKey = "AIzaSyDqSUOyNgoZnKHCtCKE7ik1j6nM9Gw8-hY";
-
+		public const string GoogleApiProjectNumber = "90921695117";
+	
 		public static App formsApp;
 
 		protected override void OnCreate (Bundle bundle)

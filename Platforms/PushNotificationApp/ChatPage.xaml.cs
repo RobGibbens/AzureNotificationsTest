@@ -9,7 +9,6 @@ namespace PushNotificationApp
 {
 	public class Message
 	{
-		public bool IsReceived {get; set;}
 		public string Text { get; set; }
 	}
 
@@ -21,18 +20,6 @@ namespace PushNotificationApp
 			this.BindingContext = this;
 			InitializeComponent ();
 
-			this.Messages.Add(new Message
-			{
-				Text = "Hello!",
-				IsReceived = false,
-			});
-
-			this.Messages.Add(new Message
-			{
-				Text = "All good!",
-				IsReceived = true,
-			});
-
 			MessagingCenter.Subscribe<App, string> (this, App.ReceivedRemoteNotificationMessage, this.OnReceivedRemoteMessage);
 			this.pickerMood.SelectedIndex = 1;
 		}
@@ -42,7 +29,6 @@ namespace PushNotificationApp
 			this.Messages.Add(new Message
 			{
 				Text = message,
-				IsReceived = true
 			});
 			this.lstMessages.ScrollTo(this.Messages.Last(), ScrollToPosition.Start, true);
 		}

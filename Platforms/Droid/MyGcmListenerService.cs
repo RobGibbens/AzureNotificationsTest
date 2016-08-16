@@ -11,13 +11,18 @@ namespace PushNotificationApp.Droid
 		public override void OnMessageReceived (string from, Bundle data)
 		{
 			// Extract the message received from GCM.
-			var message = data.GetString ("message");
+			var message = data.GetString ("msg");
 
 			// Forward the received message in a local notification.
-			SendNotification (message);
+			//SendNotification (message);
+
+			MainActivity.formsApp.OnNativeReceivedRemoteNotification(message);
 		}
 
-		// Use Notification Builder to create and launch the notification:
+		/// <summary>
+		/// Helper to create a local notification and display it in the messaging center.
+		/// </summary>
+		/// <param name="message">Message.</param>
 		void SendNotification (string message)
 		{
 			var intent = new Intent (this, typeof (MainActivity));
@@ -25,8 +30,11 @@ namespace PushNotificationApp.Droid
 			var pendingIntent = PendingIntent.GetActivity (this, 0, intent, PendingIntentFlags.OneShot);
 
 			var notificationBuilder = new Notification.Builder (this)
-													  //.SetSmallIcon (Resource.Drawable.ic_stat_ic_notification)
+			                                          // The icon is mandatory. If omitted, the notification will not be shown. No error either.
+			                                          .SetSmallIcon (Resource.Drawable.icon)
+			                                          // The title is mandatory.
 													  .SetContentTitle ("GCM Message")
+			                                          // The text is madatory.
 													  .SetContentText (message)
 													  .SetAutoCancel (true)
 													  .SetContentIntent (pendingIntent);
