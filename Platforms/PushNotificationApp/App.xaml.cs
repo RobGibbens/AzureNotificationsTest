@@ -5,6 +5,7 @@ using System;
 using Plugin.DeviceInfo;
 using System.Threading.Tasks;
 using Plugin.Settings;
+using System.Diagnostics;
 
 namespace PushNotificationApp
 {
@@ -121,8 +122,11 @@ namespace PushNotificationApp
 				case Plugin.DeviceInfo.Abstractions.Platform.Android:
 				deviceInfo.Platform = Platform.Android;
 				break;
+				case Plugin.DeviceInfo.Abstractions.Platform.Windows:
+					deviceInfo.Platform = Platform.Windows;
+					break;
 				default:
-				throw new InvalidOperationException ("Unsupported platform!");
+				throw new InvalidOperationException ($"Unsupported platform: {CrossDeviceInfo.Current.Platform}");
 			}
 
 			try
@@ -145,6 +149,7 @@ namespace PushNotificationApp
 			}
 			catch (Exception ex)
 			{
+				Debug.WriteLine("Registration failed: " + ex.Message);
 				App.Current.MainPage.DisplayAlert ("Registration failed", ex.Message, "OK");
 			}
 		}

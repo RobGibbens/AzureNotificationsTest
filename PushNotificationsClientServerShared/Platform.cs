@@ -13,7 +13,11 @@
 		/// <summary>
 		/// Registers an Android device or can be used to limit sending to Android devices only.
 		/// </summary>
-		Android
+		Android,
+		/// <summary>
+		/// Registers a Windows device using WNS.
+		/// </summary>
+		Windows
 	}
 }
 

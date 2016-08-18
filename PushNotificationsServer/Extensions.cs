@@ -24,6 +24,8 @@ namespace PushNotificationsServer
 					return Platform.iOS;
 				case NotificationPlatform.Gcm:
 					return Platform.Android;
+				case NotificationPlatform.Wns:
+					return Platform.Windows;
 				default:
 					throw new InvalidOperationException($"Platform not supported: {platform.ToString()}");
 			}
@@ -42,6 +44,8 @@ namespace PushNotificationsServer
 					return NotificationPlatform.Apns;
 				case Platform.Android:
 					return NotificationPlatform.Gcm;
+				case Platform.Windows:
+					return NotificationPlatform.Wns;
 				default:
 					throw new InvalidOperationException($"Platform not supported: {devicePlatform.ToString()}");
 			}
@@ -111,6 +115,11 @@ namespace PushNotificationsServer
 					unhappyTemplate = "{\"data\":{\"msg\":\"{ $(sender) + ': \U0001F61F ' + $(message)}\" } }";
 					break;
 
+				case NotificationPlatform.Wns:
+					neutralTemplate = "$(sender) + ': ' + $(message)";
+					happyTemplate = "$(sender) + ': \U0001F600 ' + $(message)";
+					unhappyTemplate = "$(sender) + ': \U0001F61F ' + $(message)";
+					break;
 				default:
 					throw new InvalidOperationException("Unsupported target platform.");
 			}
