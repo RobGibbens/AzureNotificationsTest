@@ -9,6 +9,7 @@
     <Import_RootNamespace>PushNotificationsClientServerShared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)IDeviceInformation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NotificationTemplate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DeviceInformation.cs" />
