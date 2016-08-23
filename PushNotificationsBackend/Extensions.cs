@@ -126,9 +126,9 @@ namespace PushNotificationsBackend.API
 				case NotificationPlatform.Wns:
 					// WNS supports different payloads. Here we are using "toasts". When saving a template the corresponding "X-WNS-Type"
 					// header must be set. This is done in the override of AddOrUpdateTemplate().
-					neutralTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "some text" + @"</text></binding></visual></toast>";
-					happyTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "some text" + @"</text></binding></visual></toast>";
-					unhappyTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "some text" + @"</text></binding></visual></toast>";
+					neutralTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "$(sender) + ': ' + $(message)" + @"</text></binding></visual></toast>";
+					happyTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "$(sender) + ': \U0001F600 ' + $(message)" + @"</text></binding></visual></toast>";
+					unhappyTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "$(sender) + ': \U0001F61F ' + $(message)" + @"</text></binding></visual></toast>";
 					break;
 				default:
 					throw new InvalidOperationException("Unsupported target platform.");
