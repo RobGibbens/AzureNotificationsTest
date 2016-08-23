@@ -26,11 +26,14 @@ namespace PushNotificationApp
 
 		void OnReceivedRemoteMessage (object sender, string message)
 		{
-			this.Messages.Add(new Message
+			Device.BeginInvokeOnMainThread(() =>
 			{
-				Text = message,
+				this.Messages.Add(new Message
+				{
+					Text = message,
+				});
+				this.lstMessages.ScrollTo(this.Messages.Last(), ScrollToPosition.Start, true);
 			});
-			this.lstMessages.ScrollTo(this.Messages.Last(), ScrollToPosition.Start, true);
 		}
 
 		public ObservableCollection<Message> Messages { get; } = new ObservableCollection<Message> ();

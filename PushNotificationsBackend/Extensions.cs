@@ -81,11 +81,19 @@ namespace PushNotificationsBackend.API
 			// Add the template. For unknown reasons a Dictionary<string, InstallationTemplate> is used here and
 			// not a List<InstallationTemplate>. The key (string) seems to be unused when evaluating template expressions.
 			// See: http://stackoverflow.com/questions/38107932/how-to-correctly-use-the-microsoft-azure-notificationhubs-installation-class/38262225#38262225
-			installation.Templates.Add(key, new InstallationTemplate
+			var installationTemplate = new InstallationTemplate
 			{
 				Body = template,
-				Tags = new List<string> { $"template-{key}" }
-			});
+				Tags = new List<string> { $"template-{key}" },
+			};
+			// WNS requires special handlers when sending notifications. We have to store those together with the template.
+			if (installation.Platform == NotificationPlatform.Wns)
+			{
+				installationTemplate.Headers = new Dictionary<string, string> {
+					["X-WNS-Type"] = @"wns/toast"
+				};
+			}
+			installation.Templates.Add(key, installationTemplate);
 		}
 
 		/// <summary>
@@ -116,9 +124,11 @@ namespace PushNotificationsBackend.API
 					break;
 
 				case NotificationPlatform.Wns:
-					neutralTemplate = "$(sender) + ': ' + $(message)";
-					happyTemplate = "$(sender) + ': \U0001F600 ' + $(message)";
-					unhappyTemplate = "$(sender) + ': \U0001F61F ' + $(message)";
+					// WNS supports different payloads. Here we are using "toasts". When saving a template the corresponding "X-WNS-Type"
+					// header must be set. This is done in the override of AddOrUpdateTemplate().
+					neutralTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "some text" + @"</text></binding></visual></toast>";
+					happyTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "some text" + @"</text></binding></visual></toast>";
+					unhappyTemplate = @"<toast><visual><binding template=""ToastText01""><text id=""1"">" + "some text" + @"</text></binding></visual></toast>";
 					break;
 				default:
 					throw new InvalidOperationException("Unsupported target platform.");

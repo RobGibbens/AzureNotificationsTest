@@ -50,7 +50,7 @@ namespace PushNotificationApp
 			App.DeviceName = this.DeviceName;
 			try
 			{
-				await ((App)App.Current).RegisterDeviceAsync().ConfigureAwait(false);
+				await ((App)App.Current).RegisterDeviceAsync();
 			}
 			finally
 			{

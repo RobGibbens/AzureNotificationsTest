@@ -82,7 +82,7 @@ namespace PushNotificationsBackend.API
 
 			return this.BadRequest("This method is currently not implemented.");
 		}
-
+		 
 		/// <summary>
 		/// Gets all installed devices from the database.
 		/// Note: it is not possible to query Azure for installations! "Registrations" can be retrieved, but
@@ -162,12 +162,28 @@ namespace PushNotificationsBackend.API
 
 				// Register with Azure Notification Hub.
 				// Note: even though this is supposed to update an existing installation, it fails with a SocketException...work in progress, I guess.
-				await this.notificationHubClient.CreateOrUpdateInstallationAsync(installation).ConfigureAwait(false);
+				try
+				{
+					await this.notificationHubClient.CreateOrUpdateInstallationAsync(installation).ConfigureAwait(false);
+				}
+				catch (Exception azureEx)
+				{
+					Debug.WriteLine(azureEx);
+					throw;
+				}
 			}
 
 			// Save to local DB. 
 			deviceInfo.LastUpdated = DateTime.UtcNow;
-			this.db.RegisteredDevices.AddOrUpdate(new DbDeviceInformation(deviceInfo));
+			try
+			{
+				this.db.RegisteredDevices.AddOrUpdate(new DbDeviceInformation(deviceInfo));
+			}
+			catch (Exception ex)
+			{
+
+				throw;
+			}
 			this.db.SaveChanges();
 
 			// Return the device info, now with updated fields.
