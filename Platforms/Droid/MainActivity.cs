@@ -23,7 +23,8 @@ using System;
 //    This must be an "Android" project (even though we are sending via a custom server!). Be sure to correctly enter the package name of the client app.
 //    The project I am using has been generated with the account rene@c-sharx.net and has the name "AzureXamUPushDemo".
 //    The project ID is 90921695117, which is used as the "Sender ID" for GCM.
-// 	  The server API key is not used by the client app but by Azure. It is "AIzaSyCGD0_LsyLWCW1FOGpKFI8QrFUmUMj9FgA"
+// 	  The server API key is not used by the client app but by Azure. It is "AIzaSyBqaf4R9Nsp0HVrZ52bARs8LibwAPJ-q0s" (if using FCM it must be copied from the "Cloud Messaging" tab!
+//    It's NOT the Web API Key from the "General Tab"!)
 
 namespace PushNotificationApp.Droid
 {
@@ -31,7 +32,7 @@ namespace PushNotificationApp.Droid
 	public class MainActivity : global::Xamarin.Forms.Platform.Android.FormsAppCompatActivity
 	{
 		// The number specified here is the "sender ID". This can be found in the Google Developer Console in the project settings; it's the the "project number".
-		public const string GoogleApiProjectNumber = "90921695117";
+		public const string GoogleApiProjectNumber = "1096275859011";
 	
 		public static App formsApp;
 
