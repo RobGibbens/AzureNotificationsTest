@@ -130,7 +130,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Platforms\PushNotificationApp\PushNotificationApp.csproj">
+    <ProjectReference Include="..\PushNotificationApp\PushNotificationApp.csproj">
       <Project>{60f0395e-88b3-44b2-bf40-7404502acfd5}</Project>
       <Name>PushNotificationApp</Name>
     </ProjectReference>
