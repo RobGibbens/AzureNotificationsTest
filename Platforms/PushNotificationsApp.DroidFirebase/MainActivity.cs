@@ -12,7 +12,8 @@ using Firebase;
 // This is the Android version that uses Firebase Cloud Messaging.
 // Reference: https://azure.microsoft.com/en-us/documentation/articles/notification-hubs-android-push-notification-google-fcm-get-started/
 // An existing GCM project can be migrated to Firebase using the Firebase console: http://firebase.google.com/console/
-// The console also provides the required server key (AIzaSyCGD0_LsyLWCW1FOGpKFI8QrFUmUMj9FgA) and sender ID (90921695117).
+// The console also provides the required server key (AIzaSyBqaf4R9Nsp0HVrZ52bARs8LibwAPJ-q0s) which must be copied from the "Cloud Messaging" tab!
+// It's NOT the Web API Key from the "General Tab"!) and sender ID (1096275859011).
 // The sender ID will be identical to the GCM project number and the server key is the same as with GCM and must be inserted into the Azure portal
 // as the GCM API Key.
 // From Azure's perspective, there is no difference between GCM and FCM.
@@ -28,7 +29,7 @@ namespace PushNotificationApp.Droid
 	{
 		// The number specified here is the "sender ID". This can be found in the Firebase Console in the project settings.
 		// This is identical to the "project ID" in GCM.
-		public const string FirebaseSenderId = "90921695117";
+		public const string FirebaseSenderId = "1096275859011";
 	
 		public static App formsApp;
 
@@ -42,18 +43,21 @@ namespace PushNotificationApp.Droid
 			// We need this with Xamarin.Android because we don't process a config file which could be downloaded from the console and
 			// included into the project.
 			var options = new FirebaseOptions.Builder()
-			                                 .SetApplicationId("1:90921695117:android:1c3be840990d46d1")
-			                                 .SetApiKey("AIzaSyCGD0_LsyLWCW1FOGpKFI8QrFUmUMj9FgA")
+			                                 .SetApplicationId("1:1096275859011:android:1c3be840990d46d1")
+			                                 .SetApiKey("AIzaSyAgcX5vprw1b1j8clmD9EWJSRkugC66HYk")
 			                                 .SetGcmSenderId(FirebaseSenderId)
+			                                 .SetDatabaseUrl("https://xamufirebase.firebaseio.com")
 			                                 .Build();
 
-			FirebaseApp app = FirebaseApp.InitializeApp(this, options);
+			MainActivity.FirebaseApp = FirebaseApp.InitializeApp(this, options);
 
 			Xamarin.Forms.Forms.Init (this, bundle);
 
 			MainActivity.formsApp = new App ();
 			LoadApplication (MainActivity.formsApp);
 		}
+
+		public static FirebaseApp FirebaseApp;
 
 		protected override void OnStart ()
 		{
@@ -130,7 +134,7 @@ namespace PushNotificationApp.Droid
 				// Request a registration token.
 				// What is InstanceID: https://developers.google.com/instance-id/
 				// In a nutshell, Instance ID provides a unique ID for the app.
-				var instanceID = FirebaseInstanceId.Instance;
+				var instanceID = FirebaseInstanceId.GetInstance(MainActivity.FirebaseApp);
 				// The number specified here is the "sender ID". This can be found in the Google Developer Console in the project settings; it's the the "project number".
 				var token = instanceID.GetToken (MainActivity.FirebaseSenderId, FirebaseMessaging.InstanceIdScope);
 

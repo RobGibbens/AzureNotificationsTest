@@ -13,8 +13,8 @@ namespace PushNotificationApp.Droid
 			// Extract the message received from GCM.
 			var message = data.GetString ("msg");
 
-			// Forward the received message in a local notification.
-			//SendNotification (message);
+			// Forward the received message in a local notification (optional, to also show the notification if the app is not running).
+			SendNotification (message);
 
 			MainActivity.formsApp.OnNativeReceivedRemoteNotification(message);
 		}

@@ -8,6 +8,18 @@
 	<permission android:name="com.xamarin.pushnotificationapp.permission.C2D_MESSAGE" android:protectionLevel="signature" />
 	<uses-permission android:name="com.xamarin.pushnotificationapp.permission.C2D_MESSAGE" />
 	<application android:label="RemoteNotifications" android:icon="@drawable/Icon">
+		 <receiver
+			android:name="com.google.android.gms.gcm.GcmReceiver"
+		    android:exported="true"
+    		android:permission="com.google.android.c2dm.permission.SEND" >
+    		<intent-filter>
+        		<action android:name="com.google.android.c2dm.intent.RECEIVE" />
+        		<category android:name="com.xamarin.pushnotificationapp" />
+    		</intent-filter>
+		</receiver>
+		
+	<!--
+
 		<receiver android:name="com.microsoft.windowsazure.notifications.NotificationsBroadcastReceiver" 
                   android:exported="true" 
                   android:permission="com.google.android.c2dm.permission.SEND">
@@ -17,5 +29,6 @@
 				<category android:name="com.xamarin.pushnotificationapp" />
 			</intent-filter>
 		</receiver>
+		-->
 	</application>
 </manifest>
