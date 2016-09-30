@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "1096275859011",
+    "firebase_url": "https://xamufirebase.firebaseio.com",
+    "project_id": "xamufirebase",
+    "storage_bucket": "xamufirebase.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096275859011:android:1c3be840990d46d1",
+        "android_client_info": {
+          "package_name": "com.xamarin.pushnotificationapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1096275859011-uqh2sbhb0ldeb238l8htnj56oa3dahvh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtjILLJneXBVyFkVrwHkVyli-Yuzy-9Y8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

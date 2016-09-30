@@ -20,6 +20,10 @@ using Firebase;
 // The differences are on the client where the registration is different or (as Google claims) easier.
 // This projects adds the alpha package "Xamarin.Firebase.Messaging".
 // In general, this is a good migration doc: https://developers.google.com/cloud-messaging/android/android-migrate-fcm
+//
+// The Xamarin repo for Firebase related stuff and a FCM sample:
+//   https://github.com/xamarin/GooglePlayServicesComponents/tree/v9.4.0/firebase-messaging/samples/FirebaseMessagingQuickstart
+//   Firebase CM requires some manual setup with Xamarin. Documented at: https://github.com/xamarin/GooglePlayServicesComponents/blob/v9.4.0/firebase-messaging/component/GettingStarted.template.md
 
 
 namespace PushNotificationApp.Droid
@@ -27,10 +31,6 @@ namespace PushNotificationApp.Droid
 	[Activity (Label = "PushNotificationApp.Droid", Icon = "@drawable/icon", Theme = "@style/MyTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation)]
 	public class MainActivity : global::Xamarin.Forms.Platform.Android.FormsAppCompatActivity
 	{
-		// The number specified here is the "sender ID". This can be found in the Firebase Console in the project settings.
-		// This is identical to the "project ID" in GCM.
-		public const string FirebaseSenderId = "1096275859011";
-	
 		public static App formsApp;
 
 		protected override void OnCreate (Bundle bundle)
@@ -40,16 +40,12 @@ namespace PushNotificationApp.Droid
 
 			base.OnCreate (bundle);
 
-			// We need this with Xamarin.Android because we don't process a config file which could be downloaded from the console and
-			// included into the project.
-			var options = new FirebaseOptions.Builder()
-			                                 .SetApplicationId("1:1096275859011:android:1c3be840990d46d1")
-			                                 .SetApiKey("AIzaSyAgcX5vprw1b1j8clmD9EWJSRkugC66HYk")
-			                                 .SetGcmSenderId(FirebaseSenderId)
-			                                 .SetDatabaseUrl("https://xamufirebase.firebaseio.com")
-			                                 .Build();
-
-			MainActivity.FirebaseApp = FirebaseApp.InitializeApp(this, options);
+			// The Xamarin Firebase component can read required initialization data directly from the config file which
+			// is downloadable from the Firebase Console. However the name has to match. This works pretty much like the native "gradle" support.
+			// The "google-services.json" file must be added to the root of the project and its build action set to "GoogleServicesJson".
+			// The App ID is available in the Firebase Console.
+			if (GetString (Resource.String.google_app_id) != "1:1096275859011:android:1c3be840990d46d1")
+				throw new System.Exception ("Invalid google-services.json file.  Make sure you've downloaded your own config file and added it to your app project with the 'GoogleServicesJson' build action.");
 
 			Xamarin.Forms.Forms.Init (this, bundle);
 
@@ -57,47 +53,16 @@ namespace PushNotificationApp.Droid
 			LoadApplication (MainActivity.formsApp);
 		}
 
-		public static FirebaseApp FirebaseApp;
-
 		protected override void OnStart ()
 		{
 			base.OnStart ();
-
-			// Check for Google Play Services on the device. We need it to use GCM.
-			if (this.IsPlayServicesAvailable ())
-			{
-				// Start the registration intent service; try to get a token:
-				var intent = new Intent (this, typeof (RegisterDeviceService));
-				StartService (intent);
-			}
-		}
-
-		public bool IsPlayServicesAvailable ()
-		{
-			int resultCode = GoogleApiAvailability.Instance.IsGooglePlayServicesAvailable (this);
-			if (resultCode != ConnectionResult.Success)
-			{
-				if (GoogleApiAvailability.Instance.IsUserResolvableError (resultCode))
-				{
-					MainActivity.formsApp.OnNativeFailedToRegisterForRemoteNotifications(GoogleApiAvailability.Instance.GetErrorString (resultCode));
-				}
-				else
-				{
-					MainActivity.formsApp.OnNativeFailedToRegisterForRemoteNotifications("Sorry, this device is not supported");
-					this.Finish ();
-				}
-				return false;
-			}
-
-			return true;
+			var activeToken = FirebaseInstanceId.Instance.Token;
 		}
 	}
 
 	/// <summary>
 	/// The service will be used if we get get informed about new token assignment from Firebase CM.
 	/// It will be triggered by Android; we don't start it directly.
-	/// This will only be called in case of a security issue. See here: https://developers.google.com/instance-id/#instance_id_lifecycle
-	/// There seems to be a way to test it manually: http://stackoverflow.com/questions/30637347/when-will-instanceidlistenerservice-be-called-and-how-to-test-it
 	/// For details on when and how this will be called: https://developers.google.com/instance-id/guides/android-implementation
 	/// </summary>
 	[Service (Exported = false)]
@@ -106,51 +71,14 @@ namespace PushNotificationApp.Droid
 	{
 		public override void OnTokenRefresh ()
 		{
-			// We need to retrieve the token. This must happen asynchronously, so we use an IntentService.
-			var intent = new Intent (this, typeof (RegisterDeviceService));
-			this.StartService (intent);
-		}
-	}
+			var refreshedToken = FirebaseInstanceId.Instance.Token;
 
-	/// <summary>
-	/// Service to retrieve the device/registration token from Firebase CM.
-	/// This gets called by <see cref="InstanceListenerService"/>.
-	/// </summary>
-	[Service(Exported = false), IntentFilter(new[] { "com.google.firebase.MESSAGING_EVENT" })]
-	class RegisterDeviceService : IntentService
-	{
-		// Create the IntentService, name the worker thread for debugging purposes:
-		public RegisterDeviceService () : base ("RegisterDeviceService")
-		{
-		}
-
-		// OnHandleIntent is invoked on a worker thread.
-		protected override void OnHandleIntent (Intent intent)
-		{
-			try
-			{
-				WriteLine ("RegisterDeviceService - Calling InstanceID.GetToken()");
-
-				// Request a registration token.
-				// What is InstanceID: https://developers.google.com/instance-id/
-				// In a nutshell, Instance ID provides a unique ID for the app.
-				var instanceID = FirebaseInstanceId.GetInstance(MainActivity.FirebaseApp);
-				// The number specified here is the "sender ID". This can be found in the Google Developer Console in the project settings; it's the the "project number".
-				var token = instanceID.GetToken (MainActivity.FirebaseSenderId, FirebaseMessaging.InstanceIdScope);
-
-				WriteLine ($"RegisterDeviceService - GCM Registration Token: {token}");
-
-				// Let out Forms app know that we have a token.
-				// IntentService uses queued worker threads. To do something on the UI we must invoke on the main thread.
-				var handler = new Handler(Looper.MainLooper);
-				handler.Post(() => {
-					MainActivity.formsApp.OnNativeRegisteredForRemoteNotifications (token);
-				});
-			}
-			catch (Exception e)
-			{
-				MainActivity.formsApp.OnNativeFailedToRegisterForRemoteNotifications($"Failed to get a registration token: {e.Message}");
-			}
+			// Let out Forms app know that we have a token.
+			// IntentService uses queued worker threads. To do something on the UI we must invoke on the main thread.
+			var handler = new Handler(Looper.MainLooper);
+			handler.Post(() => {
+				MainActivity.formsApp.OnNativeRegisteredForRemoteNotifications (refreshedToken);
+			});
 		}
 	}
 }
